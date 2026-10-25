@@ -15,6 +15,15 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Root route - redirect to merchant login or serve index
+  app.get('/', (req, res, next) => {
+    if (isProduction && fs.existsSync(distIndex)) {
+      res.sendFile(distIndex);
+    } else {
+      next();
+    }
+  });
+
   // Health check endpoint for Cloud Run probes
   app.get('/health', (req, res) => {
     res.status(200).send('OK');

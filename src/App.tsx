@@ -20,20 +20,17 @@ const DemoPortal = () => (
 );
 
 const Home = () => (
-  <div className="p-8">
-    <h1 className="text-2xl font-bold mb-4 text-blue-600">TKPayBD Merchant Management</h1>
-    <div className="space-y-4">
-      <div className="p-4 border rounded shadow-sm">
-        <h2 className="font-semibold mb-2">Main Application</h2>
-        <div className="flex gap-4">
-          <Link to="/merchant/login" className="text-blue-500 hover:underline">/merchant/login</Link>
-          <Link to="/merchant/login.php" className="text-blue-500 hover:underline">/merchant/login.php</Link>
-        </div>
-      </div>
-      <div className="p-4 border rounded shadow-sm bg-gray-50">
-        <h2 className="font-semibold mb-2">Demo Version</h2>
-        <Link to="/demo" className="text-green-600 hover:underline font-medium">Open Demo Portal</Link>
-      </div>
+  <div className="p-8 max-w-md mx-auto text-center">
+    <h1 className="text-2xl font-bold mb-6 text-blue-600">TKPayBD Demo Portal</h1>
+    <div className="p-6 border rounded-2xl shadow-xl bg-white space-y-4">
+      <h2 className="text-lg font-semibold text-gray-800">Demo Version</h2>
+      <p className="text-sm text-gray-500 mb-4">You can test the features in our demo environment before going live.</p>
+      <Link 
+        to="/demo" 
+        className="block w-full bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition font-bold"
+      >
+        Open Demo Portal
+      </Link>
     </div>
   </div>
 );
