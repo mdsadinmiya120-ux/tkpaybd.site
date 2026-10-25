@@ -178,12 +178,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
       );
 
       const isAuthorizedByMasterAgent = Boolean(
-        isMasterAgent || (
-          match.isActive !== false &&
-          match.partnershipStatus !== 'Inactive' &&
-          match.partnershipStatus !== 'Rejected' &&
-          (match.isMasterAgent || match.isPartnerAgent || match.isAdminAgent || match.createdByMasterAgent || match.partnershipStatus === 'Approved' || match.isApproved === true)
-        )
+        isMasterAgent ||
+        match.isMasterAgent ||
+        match.isPartnerAgent ||
+        match.isAdminAgent ||
+        match.createdByMasterAgent ||
+        match.partnershipStatus === 'Approved' ||
+        match.isApproved === true
       );
 
       if (!isAuthorizedByMasterAgent) {

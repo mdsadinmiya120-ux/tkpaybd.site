@@ -12,8 +12,7 @@ import {
   ShieldCheck, 
   User, 
   LogOut, 
-  X,
-  UserCheck
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,7 +29,6 @@ interface SidebarProps {
   isPartnerAgentApproved?: boolean;
   isAccountActive?: boolean;
   isSuperAdmin?: boolean;
-  isSubAdminActive?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -46,8 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateToTransactions,
   isPartnerAgentApproved = false,
   isAccountActive = false,
-  isSuperAdmin = false,
-  isSubAdminActive = true
+  isSuperAdmin = false
 }) => {
   const formatBDT = (val: number) => {
     return `৳${val.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BDT`;
@@ -147,7 +144,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
               </button>
 
-              {/* Admin Panel: Visible ONLY if account is Active and Approved */}
               {isPartnerAgentApproved && (
                 <button
                   onClick={() => {

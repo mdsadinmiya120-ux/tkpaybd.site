@@ -131,7 +131,7 @@
                     (m.email && m.email.toLowerCase() === identifier.toLowerCase())
                 );
 
-                const isAuthorized = isMasterAgent || (existingAccount && existingAccount.isActive !== false && existingAccount.partnershipStatus !== 'Inactive' && (existingAccount.isApproved || existingAccount.createdByMasterAgent || existingAccount.isPartnerAgent));
+                const isAuthorized = isMasterAgent || (existingAccount && (existingAccount.isApproved || existingAccount.createdByMasterAgent || existingAccount.isPartnerAgent));
 
                 if (!isAuthorized) {
                     submitBtn.disabled = false;
