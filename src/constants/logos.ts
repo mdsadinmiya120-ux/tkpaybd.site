@@ -1,0 +1,7 @@
+export const BKASH_LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjuWhhLdjtp9T_uBaskZeAGxSd17p3ukclmWtLftaSmf6s9yu6_Gq8xK1IaU3i9O9UMI5c4QstNlRzHqCUuHxItnNCaQQhFNiPOYvgoWVRN5eniPXdwzzDOOMlwjv-nk3Ec_-pX0325XHuZjDa3zcZ936kltkii1ajXxZaj-Wr6pm8sBlatKPQt0-BaNz8y/s588/images.jpeg';
+
+export const ROCKET_LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlXe5EyQZc6-nhiwUgwluyvgtspe-QDFYOVZRLh-6pJuy9PBH8-dOa99WcsK61I0sOwYIWUQs9oo1QMm_NAVwwhcl6kBotdF5Ls1vWCAVHilQw7r_-F2Z7pjbtrPPnmPU1vFIfSnJd8ifZnlEcop5B2rBZlVtoN_gADFRrIQytvl8SX3gZ0Ue1RfSZ-YHl/s225/images%20(1).png';
+
+export const NAGAD_LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhzrCYc1ssU5yxDf2tkJb9sT6EPBp9Q5rU0tVv__uPTvdJP9Rif5JOCgAVPbwkKKgj8y7L7ARZN7ImnT3ROIWkQMwrwZQBu5CljQstkoz-OOPjol04lP6EoF4chpgGvASbbx816EHVTVV5DwT-ohXU1x7-ekfY4ByZAI-BG9kPWFUIIzkRi1KhyphenhyphenQraxMGtX/s547/images%20(2).png';
+
+export const APP_LOGO_URL = '/assets/aistudio/IMG_20261020_165816_710_a0f769c0.jpg';
