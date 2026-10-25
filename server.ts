@@ -20,27 +20,21 @@ async function startServer() {
     res.status(200).send('OK');
   });
 
-  // Route for the merchant login path - serve app
+  // Explicit route for the requested merchant login path
   app.get('/merchant/login.php', (req, res) => {
     if (isProduction && fs.existsSync(distIndex)) {
       res.sendFile(distIndex);
     } else {
-      // In dev, handle via Vite middleware later
-      res.redirect('/merchant/login.php'); 
+      // In dev, let the wildcard/vite handler deal with it
+      res.redirect('/');
     }
-  });
-
-  // Root route - empty response
-  app.get('/', (req, res) => {
-    res.status(200).send('');
   });
 
   if (isProduction && fs.existsSync(distIndex)) {
     console.log('Serving production build from:', distPath);
     app.use(express.static(distPath));
-    // Fallback for other routes? User didn't specify. Let's keep it minimal.
     app.get('*', (req, res) => {
-      res.status(404).send('Not Found');
+      res.sendFile(distIndex);
     });
   } else {
     // Dev server using Vite
