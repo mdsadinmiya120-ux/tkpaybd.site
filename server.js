@@ -18,14 +18,17 @@ async function startServer() {
     if (isProduction && fs.existsSync(distIndex)) {
       res.sendFile(distIndex);
     } else {
-      res.redirect("/");
+      res.redirect("/merchant/login.php");
     }
+  });
+  app.get("/", (req, res) => {
+    res.status(200).send("");
   });
   if (isProduction && fs.existsSync(distIndex)) {
     console.log("Serving production build from:", distPath);
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(distIndex);
+      res.status(404).send("Not Found");
     });
   } else {
     console.log("Starting Vite development server...");
