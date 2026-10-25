@@ -58,7 +58,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
     if (!bdtTrxId) return;
     setIsSubmitting(true);
     // Simulation: In a real app, this would be an API call
-    console.log('Submission:', { merchantId: propMerchantId, bdtPhone, bdtTrxId });
+    console.log('Submission:', { merchantId, bdtPhone, bdtTrxId });
     setTimeout(() => {
       setIsSubmitted(true);
       setIsSubmitting(false);
@@ -70,7 +70,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
       {/* Partnership Request Modal */}
       {showPartnershipForm && (
         <PartnershipForm 
-          merchantId={propMerchantId || ''} 
+          merchantId={merchantId} 
           onClose={() => setShowPartnershipForm(false)} 
           onSubmit={(data) => {
             const updated: MerchantProfile = {
