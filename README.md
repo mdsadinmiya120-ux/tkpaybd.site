@@ -1,11 +1,28 @@
-<div align="center">
+# TkpayBD - Merchant Payment Gateway & Dashboard
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+TkpayBD Official Merchant Dashboard, Partner Agent Control Panel, and Payment Gateway integration for Bangladesh (bKash, Nagad, Rocket, USDT).
 
-  <h1>Built with AI Studio</h2>
+## 🚀 Live Access
+- **Merchant Login:** `https://yourdomain.com/merchant/login.php` or `https://yourdomain.com/merchant/login.html`
+- **Official Website:** [tkpaybd.site](https://tkpaybd.site)
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 📁 Repository Structure
+- `merchant/`
+  - `login.html`: Standalone mobile & desktop friendly merchant login page.
+  - `index.html`: Direct folder route for `yourdomain.com/merchant/`.
+  - `login.php`: PHP fallback endpoint for hosting environments.
+  - `logo.jpg`: Brand logo asset.
+- `src/`: Complete React TypeScript merchant portal source code (Dashboard, Deposit, Withdraw, Admin Panel, API Keys).
+- `public/`: Static web assets, logos, and entry templates.
+- `server.ts`: Express backend server implementation.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## 🛠️ How to Run Locally
+```bash
+npm install
+npm run dev
+```
 
-</div>
+## 📦 How to Build for Production
+```bash
+npm run build
+```
