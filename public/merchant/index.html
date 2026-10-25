@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merchant Login - TkpayBD</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .logo-font { font-family: serif; font-style: italic; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-gray-900 overflow-hidden">
+    <div class="min-h-screen flex flex-col justify-between">
+        
+        <!-- Main Login Content -->
+        <main class="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:px-6">
+            <div class="max-w-[440px] w-full bg-white p-8 sm:p-10 rounded-[32px] shadow-2xl border border-gray-100 animate-fade-in">
+                
+                <!-- Brand Header -->
+                <div class="text-center space-y-5 mb-10">
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="font-bold text-4xl tracking-tight logo-font">
+                            <span class="text-[#1b3a6b]">Tk</span><span class="text-[#3b82f6]">pay</span>
+                        </span>
+                        <div class="relative flex items-center">
+                            <span class="font-bold text-4xl text-[#10b981] tracking-tight">BD</span>
+                            <!-- WiFi / Signal Icon SVG -->
+                            <div class="absolute -top-5 -right-6 flex items-end">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                                    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                                    <circle cx="12" cy="20" r="1" fill="#10b981" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 pt-2">
+                        <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Merchant Login</h1>
+                        <p class="text-sm text-gray-400 font-medium">Securely access your merchant dashboard</p>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-extrabold text-gray-500 tracking-widest uppercase ml-1">MERCHANT ID OR PHONE</label>
+                        <div class="relative">
+                            <input type="text" id="identifier" required 
+                                placeholder="Enter ID (e.g. M2024XXXX)" 
+                                class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:bg-white shadow-sm transition-all placeholder-gray-400">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-extrabold text-gray-500 tracking-widest uppercase ml-1">PASSWORD</label>
+                        <div class="relative">
+                            <input type="password" id="password" required 
+                                placeholder="Enter your password" 
+                                class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:bg-white shadow-sm transition-all placeholder-gray-400">
+                        </div>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div id="errorAlert" class="hidden p-4 bg-rose-50 text-rose-600 text-xs font-bold rounded-2xl border border-rose-100 animate-pulse">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span id="errorMessage">Invalid credentials. Please try again.</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn" 
+                        class="w-full bg-[#6366f1] hover:bg-[#5558eb] active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-3">
+                        <span id="btnText">Sign In to Dashboard</span>
+                    </button>
+                </form>
+
+                <!-- Footer Links -->
+                <div class="mt-8 flex items-center justify-between text-xs font-bold px-2">
+                    <a href="https://t.me/TkpayBD_Support" target="_blank" class="text-gray-400 hover:text-gray-700 transition">Forgot password?</a>
+                    <a href="https://www.tkpaybd.site" class="text-indigo-600 hover:text-indigo-800 transition">Create new account</a>
+                </div>
+            </div>
+        </main>
+
+        <!-- Page Footer -->
+        <footer class="py-6 text-center text-[10px] font-extrabold text-gray-400 tracking-widest uppercase">
+            © 2026 TkpayBD • Secure Payment Gateway • All Rights Reserved
+        </footer>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const errorAlert = document.getElementById('errorAlert');
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            btnText.innerHTML = 'Verifying Credentials...';
+            errorAlert.classList.add('hidden');
+
+            setTimeout(() => {
+                const mainAppUrl = 'https://ais-pre-wfnu3wn3tlgnk4ejl7cryk-622380097231.asia-southeast1.run.app';
+                window.location.href = mainAppUrl;
+            }, 800);
+        });
+    </script>
+</body>
+</html>
