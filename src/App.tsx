@@ -75,8 +75,6 @@ export default function App() {
     merchant.merchantId === 'S01926516246' || 
     merchant.phone === '01926516246' ||
     merchant.phone === '+8801926516246' ||
-    merchant.email === 'admin@tkpaybd.site' || 
-    merchant.email === 'sadin@tkpaybd.site' ||
     merchant.email === 'admin@chaopaopaybd.site' || 
     merchant.email === 'sadin@chaopaopaybd.site';
 
