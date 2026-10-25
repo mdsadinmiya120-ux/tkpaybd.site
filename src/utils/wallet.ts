@@ -8,14 +8,7 @@ export const getValidRandomWalletNumber = (method: string): string => {
 
     if (savedNums) {
       const list = JSON.parse(savedNums);
-      const filtered = list.filter((item: any) => 
-        item.number !== '01711223344' && 
-        item.number !== '01811223344' && 
-        item.number !== '01911223344' && 
-        item.number !== '12345678' && 
-        item.number !== '1234'
-      );
-      const methodList = filtered.filter((item: any) => item.method.toLowerCase() === method.toLowerCase());
+      const methodList = list.filter((item: any) => item.method.toLowerCase() === method.toLowerCase());
       
       const validList = methodList.filter((item: any) => {
         const limit = item.limit !== undefined ? Number(item.limit) : 50000;
@@ -34,6 +27,5 @@ export const getValidRandomWalletNumber = (method: string): string => {
       }
     }
   } catch (e) {}
-
-  return '123455';
+  return '12345678';
 };

@@ -45,10 +45,7 @@ export interface MerchantProfile {
   password?: string;
   isAdminAgent?: boolean;
   isPartnerAgent?: boolean;
-  partnershipStatus?: 'None' | 'Pending Verification' | 'Approved' | 'Rejected' | 'Inactive';
-  isActive?: boolean;
-  isApproved?: boolean;
-  status?: string;
+  partnershipStatus?: 'None' | 'Pending Verification' | 'Approved' | 'Rejected';
   commissionPayin?: number;
   commissionPayout?: number;
   accountType?: 'Partnership Agent' | 'Payment Gateway Use' | 'Merchant';

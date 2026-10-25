@@ -12,8 +12,7 @@ import {
   ShieldCheck, 
   User, 
   LogOut, 
-  X,
-  UserCheck
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,7 +29,6 @@ interface SidebarProps {
   isPartnerAgentApproved?: boolean;
   isAccountActive?: boolean;
   isSuperAdmin?: boolean;
-  isSubAdminActive?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -46,8 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateToTransactions,
   isPartnerAgentApproved = false,
   isAccountActive = false,
-  isSuperAdmin = false,
-  isSubAdminActive = true
+  isSuperAdmin = false
 }) => {
   const formatBDT = (val: number) => {
     return `৳${val.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BDT`;
@@ -77,12 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <div>
               <h1 className="font-extrabold text-lg tracking-wide text-white flex items-center gap-1.5 -mt-1">
-                <span>
-                  <span className="text-white">T</span>
-                  <span className="text-orange-400">K</span>
-                  <span className="text-indigo-100 font-semibold ml-0.5">pay</span>
-                  <span className="text-emerald-300 ml-0.5">BD</span>
-                </span>
+                TkpayBD
                 <Wifi className="w-5 h-5 text-emerald-300" />
               </h1>
               <p className="text-[11px] text-indigo-200">Merchant Gateway</p>
@@ -147,7 +139,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
               </button>
 
-              {/* Admin Panel: Visible ONLY if account is Active and Approved */}
               {isPartnerAgentApproved && (
                 <button
                   onClick={() => {

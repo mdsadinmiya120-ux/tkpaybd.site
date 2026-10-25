@@ -78,7 +78,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         currency: 'BDT',
         status: 'Pending',
         method,
-        customerPhone: '123455',
+        customerPhone: '12345678',
         customerName: 'Merchant Deposit',
         createdAt: new Date().toISOString(),
         charge: numAmount * ((commissionPayin ?? 1.5) / 100),

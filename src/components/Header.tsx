@@ -30,8 +30,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeT
       case 'settings': return 'Merchant Settings';
       case 'support': return 'Support & Help';
       case 'inactive': return 'Inactive Services';
-      case 'admin': return 'Main Admin Panel';
-      case 'subadmin': return 'Sub Admin Panel';
+      case 'admin': return 'Admin Panel';
       default: return 'Dashboard';
     }
   };

@@ -157,9 +157,49 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           </div>
         ) : (
           <div className="p-4 space-y-5">
-            {/* Wallet Provider Section (Shows ONLY the selected method) */}
+            {/* Wallet Provider Section */}
             <div>
               <p className="text-xs font-bold text-gray-700 mb-2">Wallet Provider</p>
+              
+              <div className="flex gap-2 mb-3">
+                {(['bKash', 'Nagad', 'Rocket'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setCurrentMethod(m)}
+                    className={`flex-1 py-1.5 px-2 text-xs font-bold rounded-lg border transition flex items-center justify-center gap-1.5 ${
+                      currentMethod === m 
+                        ? m === 'bKash' ? 'bg-pink-50 border-pink-500 text-pink-700' :
+                          m === 'Nagad' ? 'bg-orange-50 border-orange-500 text-orange-700' :
+                          'bg-purple-50 border-purple-500 text-purple-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {m === 'bKash' && (
+                      <img 
+                        src={BKASH_LOGO_URL} 
+                        alt="bKash" 
+                        className="w-4 h-4 object-contain rounded-full" 
+                      />
+                    )}
+                    {m === 'Nagad' && (
+                      <img 
+                        src={NAGAD_LOGO_URL} 
+                        alt="Nagad" 
+                        className="w-4 h-4 object-contain rounded-full" 
+                      />
+                    )}
+                    {m === 'Rocket' && (
+                      <img 
+                        src={ROCKET_LOGO_URL} 
+                        alt="Rocket" 
+                        className="w-4 h-4 object-contain rounded-xs" 
+                      />
+                    )}
+                    <span>{m}</span>
+                  </button>
+                ))}
+              </div>
 
               {/* Dedicated Banner matching screenshot */}
               <div className={`p-4 rounded-2xl text-white font-bold flex items-center gap-3 shadow-md ${
@@ -195,7 +235,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                   )}
                 </div>
                 <span className="text-base tracking-wide uppercase">
-                  {currentMethod} DEPOSIT
+                  {currentMethod} Deposit
                 </span>
               </div>
             </div>
