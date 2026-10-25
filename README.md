@@ -1,29 +1,35 @@
-# TkpayBD - Merchant Payment Gateway
+<div align="center">
+<img width="1200" height="475" alt="TkpayBD Banner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-TkpayBD Official Merchant Dashboard and Payment Gateway integration for Bangladesh (bKash, Nagad, Rocket, USDT).
+# TkpayBD - Merchant Payment Gateway & Dashboard
+
+TkpayBD Official Merchant Dashboard, Partner Agent Control Panel, and Payment Gateway integration for Bangladesh (bKash, Nagad, Rocket, USDT).
+
+## 🚀 Live Access
+- **Merchant Login:** `https://yourdomain.com/merchant/login.php` or `https://yourdomain.com/merchant/login.html`
+- **Official Website:** [tkpaybd.site](https://tkpaybd.site)
 
 ## 📁 Repository Structure
 - `merchant/`
   - `login.html`: Standalone mobile & desktop friendly merchant login page.
   - `index.html`: Direct folder route for `yourdomain.com/merchant/`.
-  - `login.php`: Optional fallback for PHP-based hosting.
-- `src/`: Complete React TypeScript merchant portal source code.
+  - `login.php`: PHP fallback endpoint for hosting environments.
+  - `logo.jpg`: Brand logo asset.
+- `src/`: Complete React TypeScript merchant portal source code (Dashboard, Deposit, Withdraw, Admin Panel, API Keys).
 - `public/`: Static web assets, logos, and entry templates.
-- `dist/`: Pre-compiled production build.
+- `server.ts`: Express backend server implementation.
 
-## 🚀 How to Run Locally
-```bash
-npm install
-npm run dev
-```
+## 🛠️ How to Run Locally
 
-## 🌐 How to Push to GitHub
-If you have a GitHub repository created:
+**Prerequisites:** Node.js
+
+1. Install dependencies:
+   `npm install`
+2. Run the app:
+   `npm run dev`
+
+## 📦 How to Build for Production
 ```bash
-git init
-git add .
-git commit -m "Initial commit - TkpayBD Merchant Gateway"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-git push -u origin main
+npm run build
 ```

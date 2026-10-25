@@ -1,6 +1,4 @@
 {
-  "name": "tkpaybd.site",
-  "description": "Professional payment gateway merchant dashboard with balance overview, transactions, API keys, and documentation.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
+  "name": "tkpaybd-merchant-demo",
+  "description": "A demo application for a merchant login interface."
 }
