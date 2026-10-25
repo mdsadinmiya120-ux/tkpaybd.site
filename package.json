@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --platform=node --format=esm --outfile=server.js --packages=external",
+    "build": "vite build && mkdir -p merchant && cp -r dist merchant/dist && esbuild server.ts --platform=node --format=esm --outfile=server.js --packages=external",
     "start": "node server.js",
-    "clean": "rm -rf dist server.js",
+    "clean": "rm -rf dist merchant/dist server.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
