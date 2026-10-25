@@ -75,13 +75,41 @@ export default function App() {
     merchant.merchantId === 'S01926516246' || 
     merchant.phone === '01926516246' ||
     merchant.phone === '+8801926516246' ||
+    merchant.email === 'admin@tkpaybd.site' || 
+    merchant.email === 'sadin@tkpaybd.site' ||
     merchant.email === 'admin@chaopaopaybd.site' || 
     merchant.email === 'sadin@chaopaopaybd.site';
 
-  const isPartnerAgentApproved = Boolean(merchant.isPartnerAgent || merchant.partnershipStatus === 'Approved');
-  const isAccountActive = Boolean(isPartnerAgentApproved || merchant.accountType === 'Payment Gateway Use' || merchant.accountType === 'Partnership Agent');
+  // Strict Account Active Check
+  const isExplicitlyInactive = Boolean(
+    merchant.isActive === false ||
+    merchant.partnershipStatus === 'Inactive' ||
+    merchant.partnershipStatus === 'Pending Verification' ||
+    merchant.partnershipStatus === 'Rejected' ||
+    merchant.partnershipStatus === 'None' ||
+    merchant.kycStatus === 'Pending' ||
+    merchant.kycStatus === 'Unverified' ||
+    merchant.status === 'Inactive' ||
+    merchant.isApproved === false
+  );
 
-  // Guard: Unapproved merchants cannot view admin tab; Active accounts cannot view inactive application view
+  const isAccountActive = Boolean(
+    !isExplicitlyInactive && (
+      merchant.isActive === true ||
+      merchant.partnershipStatus === 'Approved' ||
+      merchant.isPartnerAgent === true ||
+      merchant.isApproved === true ||
+      merchant.kycStatus === 'Verified'
+    )
+  );
+
+  const isPartnerAgentApproved = Boolean(
+    isAccountActive && (
+      isSuperAdmin || merchant.isPartnerAgent === true || merchant.partnershipStatus === 'Approved'
+    )
+  );
+
+  // Guard: Unapproved or inactive merchants cannot view admin tab; Active accounts cannot view inactive application view
   useEffect(() => {
     if (activeTab === 'admin' && !isPartnerAgentApproved) {
       setActiveTab('dashboard');
@@ -109,19 +137,23 @@ export default function App() {
                 const pBal = match.balance !== undefined ? Number(match.balance) : prev.balance;
                 const pAccType = match.accountType || prev.accountType;
                 const pFeeType = match.feeType || (pAccType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
-
-                const prevPayin = prev.commissionPayin;
-                const prevPayout = prev.commissionPayout;
-                const prevBal = prev.balance;
-                const prevFeeType = prev.feeType;
+                const pPartner = match.isPartnerAgent !== undefined ? Boolean(match.isPartnerAgent) : prev.isPartnerAgent;
+                const pStatus = match.partnershipStatus || match.status || prev.partnershipStatus;
+                const pActive = match.isActive !== undefined ? Boolean(match.isActive) : prev.isActive;
+                const pKyc = match.kycStatus || match.accountStatus || prev.kycStatus;
+                const pApproved = match.isApproved !== undefined ? Boolean(match.isApproved) : prev.isApproved;
 
                 if (
-                  prevBal === pBal &&
-                  prevPayin === pPayin &&
-                  prevPayout === pPayout &&
+                  prev.balance === pBal &&
+                  prev.commissionPayin === pPayin &&
+                  prev.commissionPayout === pPayout &&
                   prev.accountType === pAccType &&
-                  prevFeeType === pFeeType &&
-                  prev.isPartnerAgent === Boolean(match.isPartnerAgent)
+                  prev.feeType === pFeeType &&
+                  prev.isPartnerAgent === pPartner &&
+                  prev.partnershipStatus === pStatus &&
+                  prev.isActive === pActive &&
+                  prev.kycStatus === pKyc &&
+                  prev.isApproved === pApproved
                 ) {
                   return prev;
                 }
@@ -133,8 +165,11 @@ export default function App() {
                   commissionPayout: pPayout,
                   accountType: pAccType,
                   feeType: pFeeType,
-                  isPartnerAgent: match.isPartnerAgent !== undefined ? Boolean(match.isPartnerAgent) : prev.isPartnerAgent,
-                  partnershipStatus: match.partnershipStatus || prev.partnershipStatus,
+                  isPartnerAgent: pPartner,
+                  partnershipStatus: pStatus,
+                  isActive: pActive,
+                  kycStatus: pKyc,
+                  isApproved: pApproved,
                   totalDeposits: typeof match.totalDeposits === 'number' ? match.totalDeposits : (prev.totalDeposits || 0),
                   totalWithdrawals: typeof match.totalWithdrawals === 'number' ? match.totalWithdrawals : (prev.totalWithdrawals || 0),
                   todayDeposits: typeof match.todayDeposits === 'number' ? match.todayDeposits : (prev.todayDeposits || 0),
@@ -160,7 +195,6 @@ export default function App() {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('merchantUpdated', handleStorageChange);
     
-    // Also run once on ID change to catch any missed updates
     handleStorageChange();
 
     return () => {
@@ -169,7 +203,7 @@ export default function App() {
     };
   }, [merchant.merchantId]);
 
-  // Real-time synchronization for Merchant Profile (Balance, Commissions, Account Type from Admin Panel)
+  // Real-time synchronization for Merchant Profile from Firebase Realtime Database
   useEffect(() => {
     if (!database || !merchant.merchantId) return;
     try {
@@ -191,97 +225,25 @@ export default function App() {
           const newAccType = val.accountType || prev.accountType;
           const pFeeType = val.feeType || (newAccType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
           const newPartner = val.isPartnerAgent !== undefined ? Boolean(val.isPartnerAgent) : prev.isPartnerAgent;
+          const newStatus = val.partnershipStatus || val.status || prev.partnershipStatus;
+          const newKyc = val.kycStatus || val.accountStatus || prev.kycStatus;
+          const newApproved = val.isApproved !== undefined ? Boolean(val.isApproved) : prev.isApproved;
+          
+          const newIsActive = val.isActive !== undefined 
+            ? Boolean(val.isActive) 
+            : (newStatus === 'Inactive' || newKyc === 'Unverified' || newKyc === 'Pending' || val.status === 'Inactive' || newApproved === false ? false : prev.isActive);
 
-          const currentPayin = Number(prev.commissionPayin ?? 0);
-          const currentPayout = Number(prev.commissionPayout ?? 0);
-          const currentBal = Number(prev.balance ?? 0);
-          const currentFeeType = prev.feeType || (prev.accountType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
-
-          // Only skip update if EVERY relevant field is identical
           if (
-            currentBal === newBal &&
-            currentPayin === newPayin &&
-            currentPayout === newPayout &&
+            prev.balance === newBal &&
+            prev.commissionPayin === newPayin &&
+            prev.commissionPayout === newPayout &&
             prev.accountType === newAccType &&
-            currentFeeType === pFeeType &&
+            prev.feeType === pFeeType &&
             prev.isPartnerAgent === newPartner &&
-            prev.partnershipStatus === (val.partnershipStatus || prev.partnershipStatus)
-          ) {
-            return prev;
-          }
-          
-          const updated: MerchantProfile = {
-            ...prev,
-            balance: newBal,
-            commissionPayin: newPayin,
-            commissionPayout: newPayout,
-            accountType: newAccType,
-            feeType: pFeeType,
-            isPartnerAgent: newPartner,
-            partnershipStatus: val.partnershipStatus || prev.partnershipStatus,
-            totalDeposits: typeof val.totalDeposits === 'number' ? val.totalDeposits : (prev.totalDeposits || 0),
-            totalWithdrawals: typeof val.totalWithdrawals === 'number' ? val.totalWithdrawals : (prev.totalWithdrawals || 0),
-            todayDeposits: typeof val.todayDeposits === 'number' ? val.todayDeposits : (prev.todayDeposits || 0),
-            todayWithdrawals: typeof val.todayWithdrawals === 'number' ? val.todayWithdrawals : (prev.todayWithdrawals || 0),
-            depositCount: typeof val.depositCount === 'number' ? val.depositCount : (prev.depositCount || 0),
-            withdrawalCount: typeof val.withdrawalCount === 'number' ? val.withdrawalCount : (prev.withdrawalCount || 0)
-          };
-          
-          try {
-            localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
-          } catch (e) {}
-          
-          return updated;
-        });
-      };
-
-      const profileRef = ref(database, `merchants/${merchant.merchantId}`);
-      const unsub = onValue(profileRef, (snapshot) => {
-        applyRemoteUpdate(snapshot.val());
-      });
-      return () => unsub();
-    } catch (e) {
-      console.warn('Profile real-time sync warning:', e);
-    }
-  }, [database, merchant.merchantId]);
-
-  // Real-time synchronization for Merchant Profile (Balance, Commissions, Account Type from Admin Panel)
-  useEffect(() => {
-    if (!database || !merchant.merchantId) return;
-    try {
-      const applyRemoteUpdate = (val: any) => {
-        if (!val) return;
-
-        setMerchant(prev => {
-          const newBal = Number(val.balance !== undefined ? val.balance : prev.balance);
-          const rawPayin = val.commissionPayin !== undefined 
-            ? val.commissionPayin 
-            : (val.payinFeePercent !== undefined ? val.payinFeePercent : (val.commission !== undefined ? val.commission : prev.commissionPayin));
-          const newPayin = Number(rawPayin ?? 0);
-
-          const rawPayout = val.commissionPayout !== undefined 
-            ? val.commissionPayout 
-            : (val.payoutFeePercent !== undefined ? val.payoutFeePercent : prev.commissionPayout);
-          const newPayout = Number(rawPayout ?? 0);
-
-          const newAccType = val.accountType || prev.accountType;
-          const pFeeType = val.feeType || (newAccType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
-          const newPartner = val.isPartnerAgent !== undefined ? Boolean(val.isPartnerAgent) : prev.isPartnerAgent;
-
-          const currentPayin = Number(prev.commissionPayin ?? 0);
-          const currentPayout = Number(prev.commissionPayout ?? 0);
-          const currentBal = Number(prev.balance ?? 0);
-          const currentFeeType = prev.feeType || (prev.accountType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
-
-          // Only skip update if EVERY relevant field is identical
-          if (
-            currentBal === newBal &&
-            currentPayin === newPayin &&
-            currentPayout === newPayout &&
-            prev.accountType === newAccType &&
-            currentFeeType === pFeeType &&
-            prev.isPartnerAgent === newPartner &&
-            prev.partnershipStatus === (val.partnershipStatus || prev.partnershipStatus)
+            prev.partnershipStatus === newStatus &&
+            prev.isActive === newIsActive &&
+            prev.kycStatus === newKyc &&
+            prev.isApproved === newApproved
           ) {
             return prev;
           }
@@ -294,7 +256,10 @@ export default function App() {
             accountType: newAccType,
             feeType: pFeeType,
             isPartnerAgent: newPartner,
-            partnershipStatus: val.partnershipStatus || prev.partnershipStatus,
+            partnershipStatus: newStatus,
+            isActive: newIsActive,
+            kycStatus: newKyc,
+            isApproved: newApproved,
             totalDeposits: typeof val.totalDeposits === 'number' ? val.totalDeposits : (prev.totalDeposits || 0),
             totalWithdrawals: typeof val.totalWithdrawals === 'number' ? val.totalWithdrawals : (prev.totalWithdrawals || 0),
             todayDeposits: typeof val.todayDeposits === 'number' ? val.todayDeposits : (prev.todayDeposits || 0),
@@ -319,14 +284,19 @@ export default function App() {
         if (snap.exists()) applyRemoteUpdate(snap.val());
       });
 
+      const unsubRoot = onValue(ref(database, `merchants/${merchant.merchantId}`), snap => {
+        if (snap.exists()) applyRemoteUpdate(snap.val());
+      });
+
       return () => {
         unsubProfile();
         unsubDir();
+        unsubRoot();
       };
     } catch (e) {
       console.warn('Profile real-time sync error:', e);
     }
-  }, [merchant.merchantId]);
+  }, [database, merchant.merchantId]);
 
   // Real-time synchronization for Transactions List
   useEffect(() => {

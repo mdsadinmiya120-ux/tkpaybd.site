@@ -16,9 +16,25 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
   merchant, 
   onUpdateMerchant 
 }) => {
-  const merchantId = propMerchantId || merchant.merchantId;
-  const isPartnerApproved = Boolean(merchant.isPartnerAgent || merchant.partnershipStatus === 'Approved');
-  const isGatewayActive = Boolean(merchant.accountType === 'Payment Gateway Use' || isPartnerApproved);
+  const isAccountExplicitlyInactive = Boolean(
+    merchant.isActive === false ||
+    merchant.partnershipStatus === 'Inactive' ||
+    merchant.partnershipStatus === 'Rejected' ||
+    merchant.kycStatus === 'Pending' ||
+    merchant.kycStatus === 'Unverified' ||
+    merchant.status === 'Inactive' ||
+    merchant.isApproved === false
+  );
+
+  const isPartnerApproved = Boolean(
+    !isAccountExplicitlyInactive &&
+    (merchant.isPartnerAgent === true || merchant.partnershipStatus === 'Approved')
+  );
+
+  const isGatewayActive = Boolean(
+    !isAccountExplicitlyInactive &&
+    (merchant.accountType === 'Payment Gateway Use' || isPartnerApproved)
+  );
   const isPartnerPending = merchant.partnershipStatus === 'Pending Verification';
   const [showPartnershipForm, setShowPartnershipForm] = useState(false);
   const [showGatewayModal, setShowGatewayModal] = useState(false);
@@ -42,7 +58,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
     if (!bdtTrxId) return;
     setIsSubmitting(true);
     // Simulation: In a real app, this would be an API call
-    console.log('Submission:', { merchantId, bdtPhone, bdtTrxId });
+    console.log('Submission:', { merchantId: propMerchantId, bdtPhone, bdtTrxId });
     setTimeout(() => {
       setIsSubmitted(true);
       setIsSubmitting(false);
@@ -54,7 +70,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
       {/* Partnership Request Modal */}
       {showPartnershipForm && (
         <PartnershipForm 
-          merchantId={merchantId} 
+          merchantId={propMerchantId || ''} 
           onClose={() => setShowPartnershipForm(false)} 
           onSubmit={(data) => {
             const updated: MerchantProfile = {

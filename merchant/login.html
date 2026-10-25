@@ -23,16 +23,16 @@
             <div class="max-w-[440px] w-full bg-white p-8 sm:p-10 rounded-[32px] shadow-2xl border border-gray-100 animate-fade-in">
                 
                 <!-- Brand Header -->
-                <div class="text-center space-y-5 mb-10">
-                    <div class="flex items-center justify-center gap-2">
-                        <span class="font-bold text-4xl tracking-tight logo-font">
-                            <span class="text-[#1b3a6b]">Tk</span><span class="text-[#3b82f6]">pay</span>
+                <div class="text-center space-y-4 mb-7">
+                    <div class="flex items-center justify-center gap-1.5">
+                        <span class="font-extrabold text-3xl tracking-tight">
+                            <span class="text-[#143d6b]">T</span><span class="text-[#eb6a24]">K</span><span class="text-[#1e293b] font-semibold ml-0.5">pay</span>
                         </span>
                         <div class="relative flex items-center">
-                            <span class="font-bold text-4xl text-[#10b981] tracking-tight">BD</span>
+                            <span class="font-bold text-3xl text-[#10b981] tracking-tight">BD</span>
                             <!-- WiFi / Signal Icon SVG -->
-                            <div class="absolute -top-5 -right-6 flex items-end">
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <div class="absolute -top-3.5 -right-5 flex items-end">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M5 12.55a11 11 0 0 1 14.08 0" />
                                     <path d="M1.42 9a16 16 0 0 1 21.16 0" />
                                     <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
@@ -42,20 +42,20 @@
                         </div>
                     </div>
 
-                    <div class="space-y-1.5 pt-2">
+                    <div class="space-y-1 pt-1">
                         <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Merchant Login</h1>
-                        <p class="text-sm text-gray-400 font-medium">Securely access your merchant dashboard</p>
+                        <p class="text-xs text-gray-500 font-medium">Securely access your merchant dashboard</p>
                     </div>
                 </div>
 
                 <!-- Login Form -->
-                <form id="loginForm" class="space-y-6">
+                <form id="loginForm" class="space-y-5">
                     <div class="space-y-2">
                         <label class="block text-[11px] font-extrabold text-gray-500 tracking-widest uppercase ml-1">MERCHANT ID OR PHONE</label>
                         <div class="relative">
                             <input type="text" id="identifier" required 
-                                placeholder="Enter ID (e.g. M2024XXXX)" 
-                                class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:bg-white shadow-sm transition-all placeholder-gray-400">
+                                placeholder="Enter ID (e.g. S01926516246) or Phone" 
+                                class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:bg-white shadow-sm transition-all placeholder-gray-400">
                         </div>
                     </div>
 
@@ -64,35 +64,32 @@
                         <div class="relative">
                             <input type="password" id="password" required 
                                 placeholder="Enter your password" 
-                                class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:bg-white shadow-sm transition-all placeholder-gray-400">
+                                class="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-semibold focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:bg-white shadow-sm transition-all placeholder-gray-400">
                         </div>
                     </div>
 
                     <!-- Error Alert -->
-                    <div id="errorAlert" class="hidden p-4 bg-rose-50 text-rose-600 text-xs font-bold rounded-2xl border border-rose-100 animate-pulse">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <span id="errorMessage">Invalid credentials. Please try again.</span>
-                        </div>
+                    <div id="errorAlert" class="hidden p-3.5 bg-rose-50 text-rose-700 text-xs font-semibold rounded-2xl border border-rose-200 animate-in fade-in leading-relaxed flex items-start gap-2">
+                        <span id="errorMessage">⛔ অননুমোদিত অ্যাক্সেস! শুধুমাত্র tkpaybd এজেন্ট যখন অ্যাকাউন্ট খুলে দেবে, কেবল তখনই সেই অথরাইজড অ্যাকাউন্ট দিয়ে লগইন করা সম্ভব। অন্য কোনো অ্যাকাউন্ট দিয়ে প্রবেশ সম্পূর্ণ নিষিদ্ধ। তাই দয়া করে কাস্টমার সার্ভিসের সাথে যোগাযোগ করুন</span>
                     </div>
 
                     <button type="submit" id="submitBtn" 
-                        class="w-full bg-[#6366f1] hover:bg-[#5558eb] active:scale-[0.98] text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-3">
+                        class="w-full bg-[#6366f1] hover:bg-[#5558eb] active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-3">
                         <span id="btnText">Sign In to Dashboard</span>
                     </button>
                 </form>
 
                 <!-- Footer Links -->
-                <div class="mt-8 flex items-center justify-between text-xs font-bold px-2">
+                <div class="mt-7 flex items-center justify-between text-xs font-bold px-2">
                     <a href="https://t.me/TkpayBD_Support" target="_blank" class="text-gray-400 hover:text-gray-700 transition">Forgot password?</a>
-                    <a href="https://www.tkpaybd.site" class="text-indigo-600 hover:text-indigo-800 transition">Create new account</a>
+                    <a href="https://tkpaybd.site" class="text-indigo-600 hover:text-indigo-800 transition">Create new account</a>
                 </div>
             </div>
         </main>
 
         <!-- Page Footer -->
-        <footer class="py-6 text-center text-[10px] font-extrabold text-gray-400 tracking-widest uppercase">
-            © 2026 TkpayBD • Secure Payment Gateway • All Rights Reserved
+        <footer class="py-5 text-center text-xs text-gray-400">
+            © 2026 TkpayBD. All rights reserved.
         </footer>
     </div>
 
@@ -109,23 +106,78 @@
             const identifier = document.getElementById('identifier').value.trim();
             const password = document.getElementById('password').value.trim();
 
-            // UI Loading State
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
-            btnText.innerHTML = 'Verifying Credentials...';
+            btnText.innerHTML = 'Verifying Security Protocol...';
             errorAlert.classList.add('hidden');
 
-            // Redirect Logic
-            // Since this is a standalone file for your domain/github, 
-            // it will redirect to the main application URL hosted on AI Studio
-            // where the actual database and session logic reside.
-            
             setTimeout(() => {
-                const mainAppUrl = 'https://ais-pre-wfnu3wn3tlgnk4ejl7cryk-622380097231.asia-southeast1.run.app';
-                // You can pass the credentials via URL if you want the main app to auto-login
-                // but for security, we just redirect to the main login screen.
-                window.location.href = mainAppUrl;
-            }, 1000);
+                // Check localStorage for approved merchants
+                let approvedMerchants = [];
+                try {
+                    const raw = localStorage.getItem('chaopaopay_all_merchants');
+                    if (raw) approvedMerchants = JSON.parse(raw);
+                } catch(e) {}
+
+                const isMasterAgent = (
+                    identifier === 'S01926516246' || 
+                    identifier === '01926516246' || 
+                    identifier.toLowerCase() === 'sadin@tkpaybd.site'
+                );
+
+                const existingAccount = approvedMerchants.find(m => 
+                    (m.merchantId && m.merchantId.toLowerCase() === identifier.toLowerCase()) ||
+                    (m.phone && m.phone === identifier) ||
+                    (m.email && m.email.toLowerCase() === identifier.toLowerCase())
+                );
+
+                const isAuthorized = isMasterAgent || (existingAccount && existingAccount.isActive !== false && existingAccount.partnershipStatus !== 'Inactive' && (existingAccount.isApproved || existingAccount.createdByMasterAgent || existingAccount.isPartnerAgent));
+
+                if (!isAuthorized) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                    btnText.innerHTML = 'Sign In to Dashboard';
+                    errorMessage.textContent = '⛔ অননুমোদিত অ্যাক্সেস! শুধুমাত্র tkpaybd এজেন্ট যখন অ্যাকাউন্ট খুলে দেবে, কেবল তখনই সেই অথরাইজড অ্যাকাউন্ট দিয়ে লগইন করা সম্ভব। অন্য কোনো অ্যাকাউন্ট দিয়ে প্রবেশ সম্পূর্ণ নিষিদ্ধ। তাই দয়া করে কাস্টমার সার্ভিসের সাথে যোগাযোগ করুন';
+                    errorAlert.classList.remove('hidden');
+                    return;
+                }
+
+                // Password Verification
+                const expectedPass = isMasterAgent ? 'Sadin120' : (existingAccount ? existingAccount.password : '');
+                if (password !== expectedPass) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                    btnText.innerHTML = 'Sign In to Dashboard';
+                    errorMessage.textContent = 'পাসওয়ার্ড ভুল হয়েছে! মাস্টার এজেন্ট কর্তৃক নির্ধারিত সঠিক পাসওয়ার্ড দিয়ে চেষ্টা করুন।';
+                    errorAlert.classList.remove('hidden');
+                    return;
+                }
+
+                // Set session with ZERO DEMO AMOUNTS (Starts at 0.00)
+                const sessionUser = {
+                    merchantId: isMasterAgent ? 'S01926516246' : existingAccount.merchantId,
+                    name: isMasterAgent ? 'Master Agent' : (existingAccount.name || 'Merchant Agent'),
+                    phone: isMasterAgent ? '01926516246' : existingAccount.phone,
+                    email: isMasterAgent ? 'sadin@tkpaybd.site' : existingAccount.email,
+                    balance: (existingAccount && typeof existingAccount.balance === 'number') ? existingAccount.balance : 0.00,
+                    totalDeposits: 0.00,
+                    totalWithdrawals: 0.00,
+                    depositCount: 0,
+                    withdrawalCount: 0,
+                    todayDeposits: 0.00,
+                    todayWithdrawals: 0.00,
+                    isMasterAgent: isMasterAgent,
+                    isPartnerAgent: true,
+                    partnershipStatus: 'Approved'
+                };
+
+                try {
+                    localStorage.setItem('chaopaopay_merchant', JSON.stringify(sessionUser));
+                } catch(e) {}
+
+                btnText.innerHTML = 'লগইন সফল! রিডাইরেক্ট হচ্ছে...';
+                window.location.href = '../index.html';
+            }, 600);
         });
     </script>
 </body>
