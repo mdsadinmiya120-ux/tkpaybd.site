@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --platform=node --format=esm --outfile=server.js --packages=external",
+    "build": "mkdir -p merchant/dist && vite build && esbuild server.ts --platform=node --format=esm --outfile=server.js --packages=external",
     "start": "node server.js",
     "clean": "rm -rf merchant/dist server.js",
     "lint": "tsc --noEmit"
