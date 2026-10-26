@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Users, Server, ArrowRight, X, AlertTriangle, Headphones, ArrowLeft, MessageSquare, ExternalLink, CheckCircle2, ShieldCheck, Check, RotateCcw } from 'lucide-react';
 import { PartnershipForm } from './PartnershipForm';
-import { MerchantProfile } from '../types';
+import { MerchantProfile, VerificationRequest } from '../types';
+import { saveVerificationRequest } from '../utils/verificationService';
 
 interface InactiveViewProps {
   setActiveTab: (tab: string) => void;
@@ -53,12 +54,40 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
     e.preventDefault();
     if (!bdtTrxId) return;
     setIsSubmitting(true);
-    // Simulation: In a real app, this would be an API call
-    console.log('Submission:', { merchantId, bdtPhone, bdtTrxId });
+
+    const targetMerchantId = merchant.merchantId || merchantId || 'UNKNOWN';
+    const newReq: VerificationRequest = {
+      id: 'VR-GW-' + Date.now(),
+      merchantId: targetMerchantId,
+      merchantName: merchant.name || 'Merchant User',
+      type: 'GATEWAY_1350',
+      title: 'Payment Gateway Activation (1350 BDT)',
+      phone: bdtPhone,
+      trxId: bdtTrxId.trim().toUpperCase(),
+      amount: 1350,
+      currency: 'BDT',
+      paymentMethod: 'bKash/Nagad',
+      status: 'Pending',
+      submittedAt: new Date().toISOString()
+    };
+
+    saveVerificationRequest(newReq);
+
+    const updated: MerchantProfile = {
+      ...merchant,
+      partnershipStatus: 'Pending Verification'
+    };
+    if (onUpdateMerchant) {
+      onUpdateMerchant(updated);
+    }
+    try {
+      localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
+    } catch (e) {}
+
     setTimeout(() => {
       setIsSubmitted(true);
       setIsSubmitting(false);
-    }, 1000);
+    }, 700);
   };
 
   return (
@@ -69,6 +98,26 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
           merchantId={merchantId} 
           onClose={() => setShowPartnershipForm(false)} 
           onSubmit={(data) => {
+            const targetMerchantId = merchant.merchantId || merchantId || 'UNKNOWN';
+            const newReq: VerificationRequest = {
+              id: 'VR-PA-' + Date.now(),
+              merchantId: targetMerchantId,
+              merchantName: data.name || merchant.name || 'Merchant User',
+              type: 'PARTNER_AGENT',
+              title: 'Partner Agent Verification Request',
+              phone: data.phone || data.bdtPhone || '',
+              whatsapp: data.whatsapp || '',
+              nidNumber: data.nidNumber || '',
+              trxId: (data.bdtTrxId || data.txHash || '').trim().toUpperCase(),
+              amount: data.paymentMethod === 'USDT' ? (Number(data.usdtAmount) || 26) : 1350,
+              currency: data.paymentMethod === 'USDT' ? 'USDT' : 'BDT',
+              paymentMethod: data.paymentMethod || 'bKash/Nagad',
+              status: 'Pending',
+              submittedAt: new Date().toISOString()
+            };
+
+            saveVerificationRequest(newReq);
+
             const updated: MerchantProfile = {
               ...merchant,
               partnershipStatus: 'Pending Verification'

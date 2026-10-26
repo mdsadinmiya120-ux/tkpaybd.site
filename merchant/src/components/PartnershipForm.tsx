@@ -78,6 +78,10 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
           whatsapp: formData.whatsapp,
           merchantId,
           paymentMethod,
+          bdtPhone,
+          bdtTrxId,
+          txHash,
+          usdtAmount,
           status: 'Pending Verification',
           submittedAt: new Date().toISOString()
         });

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Menu, MoreVertical, Check, Copy } from 'lucide-react';
+import { Menu, MoreVertical, Check, Copy, UserCheck, Shield } from 'lucide-react';
 import { MerchantProfile } from '../types';
+import { masterAdminMerchant, initialMerchant } from '../mockData';
 
 interface HeaderProps {
   onOpenSidebar: () => void;
   merchant: MerchantProfile;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onUpdateMerchant?: (updated: MerchantProfile) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeTab, setActiveTab }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeTab, setActiveTab, onUpdateMerchant }) => {
   const [copied, setCopied] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
@@ -17,6 +19,22 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeT
     navigator.clipboard.writeText(merchant.merchantId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isMasterAdmin = 
+    merchant.merchantId === 'S01926516246' || 
+    merchant.merchantId === 'M20241018' || 
+    merchant.phone === '01926516246';
+
+  const handleSwitchRole = (target: MerchantProfile) => {
+    if (onUpdateMerchant) {
+      onUpdateMerchant(target);
+    }
+    try {
+      localStorage.setItem('chaopaopay_merchant', JSON.stringify(target));
+    } catch (e) {}
+    setShowOptions(false);
+    window.dispatchEvent(new Event('merchantUpdated'));
   };
 
   const getTitle = () => {
@@ -29,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeT
       case 'documentation': return 'API Docs';
       case 'settings': return 'Settings';
       case 'support': return 'Support';
-      case 'inactive': return 'Inactive';
+      case 'inactive': return 'Verification';
       case 'admin': return 'Admin Panel';
       case 'subadmin': return 'Sub Admin';
       default: return 'Dashboard';
@@ -64,6 +82,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeT
           {copied ? <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-600" /> : <Copy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-500" />}
         </button>
 
+        {/* Status indicator */}
+        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+          merchant.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {merchant.isActive ? 'Active' : 'Inactive'}
+        </span>
+
         {/* Website Link Badge - Hidden on very small screens */}
         {merchant.websiteUrl && (
           <a
@@ -95,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeT
                 className="fixed inset-0 z-40"
                 onClick={() => setShowOptions(false)}
               ></div>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
                 <button 
                   onClick={() => { setActiveTab('dashboard'); setShowOptions(false); }}
                   className="w-full text-left px-4 py-2 hover:bg-gray-50 text-gray-700 font-medium cursor-pointer"
@@ -114,6 +139,29 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar, merchant, activeT
                 >
                   API Credentials
                 </button>
+
+                <div className="border-t border-gray-100 my-1"></div>
+
+                {/* Quick Account Switcher for testing Inactive vs Master Admin */}
+                <div className="px-3 py-1">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Account Role Switcher</p>
+                  {isMasterAdmin ? (
+                    <button
+                      onClick={() => handleSwitchRole(initialMerchant)}
+                      className="w-full text-left px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <span>🔴 Inactive Merchant (M20261019)</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSwitchRole(masterAdminMerchant)}
+                      className="w-full text-left px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <span>👑 Master Admin (S01926516246)</span>
+                    </button>
+                  )}
+                </div>
+
                 <div className="border-t border-gray-100 my-1"></div>
                 <button 
                   onClick={() => { alert('Tkpaybd.site Live Secure Gateway'); setShowOptions(false); }}

@@ -89,15 +89,12 @@ export default function App() {
     )
   );
 
-  // Guard: Unapproved or inactive merchants cannot view admin tab; Active accounts cannot view inactive application view
+  // Guard: Unapproved or inactive merchants cannot view admin tab
   useEffect(() => {
     if (activeTab === 'admin' && !isPartnerAgentApproved) {
       setActiveTab('dashboard');
     }
-    if (activeTab === 'inactive' && isAccountActive) {
-      setActiveTab('dashboard');
-    }
-  }, [activeTab, isPartnerAgentApproved, isAccountActive]);
+  }, [activeTab, isPartnerAgentApproved]);
 
   // Sync profile from chaopaopay_all_merchants whenever another tab or Admin Panel updates storage
   useEffect(() => {
@@ -651,12 +648,16 @@ export default function App() {
                   <div className="flex items-center gap-3">
                     <span>{isAccountActive ? '🟢' : '🔴'}</span>
                     <span className="tracking-wide">
-                      {isAccountActive ? 'Partner Verify' : 'Verify Account'}
+                      {isAccountActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  {isAccountActive && (
+                  {isAccountActive ? (
                     <span className="text-[10px] bg-emerald-200/80 text-emerald-800 font-bold px-2 py-0.5 rounded-md">
-                      {isPartnerAgentApproved ? 'Partner' : 'Merchant'}
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-red-200/80 text-red-800 font-bold px-2 py-0.5 rounded-md">
+                      Unverified
                     </span>
                   )}
                 </button>
@@ -822,6 +823,7 @@ export default function App() {
           merchant={merchant}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          onUpdateMerchant={setMerchant}
         />
 
         <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-20">

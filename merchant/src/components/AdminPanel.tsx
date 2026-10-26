@@ -14,12 +14,16 @@ import {
   Users,
   UserX,
   Power,
-  RefreshCw
+  RefreshCw,
+  FileText,
+  Copy
 } from 'lucide-react';
-import { Transaction, MerchantProfile } from '../types';
+import { Transaction, MerchantProfile, VerificationRequest } from '../types';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
 import { database } from '../firebase';
 import { ref, set, onValue } from 'firebase/database';
+import { getVerificationRequests } from '../utils/verificationService';
+import { defaultMerchantsList } from '../mockData';
 
 interface AdminPanelProps {
   merchant: MerchantProfile;
@@ -57,8 +61,57 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     merchant.email === 'sadin@chaopaopaybd.site';
 
   // Master Admin Account Status Control State & Listeners
-  const [allAccounts, setAllAccounts] = useState<MerchantProfile[]>([]);
+  const [allAccounts, setAllAccounts] = useState<MerchantProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('chaopaopay_all_merchants');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return defaultMerchantsList;
+  });
   const [accountSearch, setAccountSearch] = useState('');
+
+  // Verification Requests State (TrxID, NID, 1350 BDT, Partner applications)
+  const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>(() => {
+    return getVerificationRequests();
+  });
+
+  useEffect(() => {
+    // 1. Local listener
+    const loadRequests = () => {
+      setVerificationRequests(getVerificationRequests());
+    };
+    loadRequests();
+    window.addEventListener('verificationRequestSubmitted', loadRequests);
+    window.addEventListener('storage', loadRequests);
+
+    // 2. Realtime listener from Firebase
+    if (database) {
+      try {
+        const vrRef = ref(database, 'verification_requests');
+        const unsub = onValue(vrRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const val = snapshot.val();
+            const list = Object.values(val) as VerificationRequest[];
+            list.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+            setVerificationRequests(list);
+            try {
+              localStorage.setItem('chaopaopay_verification_requests', JSON.stringify(list));
+            } catch (e) {}
+          }
+        });
+        return () => {
+          unsub();
+          window.removeEventListener('verificationRequestSubmitted', loadRequests);
+          window.removeEventListener('storage', loadRequests);
+        };
+      } catch (e) {}
+    }
+
+    return () => {
+      window.removeEventListener('verificationRequestSubmitted', loadRequests);
+      window.removeEventListener('storage', loadRequests);
+    };
+  }, [database]);
 
   useEffect(() => {
     if (!database || !isSuperAdmin) return;
@@ -73,6 +126,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           try {
             const saved = localStorage.getItem('chaopaopay_all_merchants');
             if (saved) setAllAccounts(JSON.parse(saved));
+            else setAllAccounts(defaultMerchantsList);
           } catch (e) {}
         }
       });
@@ -116,8 +170,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         list.push(updatedAcc);
       }
       localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
+      try {
+        const curSaved = localStorage.getItem('chaopaopay_merchant');
+        if (curSaved) {
+          const curM = JSON.parse(curSaved);
+          if (curM.merchantId && curM.merchantId.trim().toLowerCase() === target.merchantId.trim().toLowerCase()) {
+            localStorage.setItem('chaopaopay_merchant', JSON.stringify(updatedAcc));
+          }
+        }
+      } catch (e) {}
       window.dispatchEvent(new Event('merchantUpdated'));
     } catch (e) {}
+
+    if (onUpdateMerchant && target.merchantId.trim().toLowerCase() === merchant.merchantId.trim().toLowerCase()) {
+      onUpdateMerchant(updatedAcc);
+    }
 
     // Local state optimistic update
     setAllAccounts(prev => prev.map(a => a.merchantId === target.merchantId ? updatedAcc : a));
@@ -129,6 +196,71 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       type: shouldActivate ? 'success' : 'error'
     });
     setTimeout(() => setFeedbackMsg(null), 4000);
+  };
+
+  const handleApproveVerification = async (req: VerificationRequest) => {
+    const updatedReq: VerificationRequest = { ...req, status: 'Approved' };
+    const updatedList = verificationRequests.map(r => r.id === req.id ? updatedReq : r);
+    setVerificationRequests(updatedList);
+    try {
+      localStorage.setItem('chaopaopay_verification_requests', JSON.stringify(updatedList));
+    } catch (e) {}
+
+    if (database) {
+      try {
+        await set(ref(database, `verification_requests/${req.id}`), updatedReq);
+      } catch (e) {}
+    }
+
+    const targetId = req.merchantId.trim().toLowerCase();
+    let target = allAccounts.find(a => a.merchantId && a.merchantId.trim().toLowerCase() === targetId);
+    if (!target) {
+      target = {
+        merchantId: req.merchantId,
+        name: req.merchantName || 'Merchant',
+        email: `${req.merchantId.toLowerCase()}@tkpaybd.site`,
+        phone: req.phone || '',
+        avatar: 'M',
+        balance: 0,
+        totalDeposits: 0,
+        depositCount: 0,
+        todayDeposits: 0,
+        totalWithdrawals: 0,
+        withdrawalCount: 0,
+        todayWithdrawals: 0,
+        kycStatus: 'Verified',
+        isActive: false
+      };
+    }
+
+    await handleToggleAccountStatus(target, true);
+
+    setFeedbackMsg({
+      text: `ভেরিফিকেশন সফলভাবে অনুমোদন করা হয়েছে! মার্চেন্ট (${req.merchantId}) এখন সক্রিয় এবং এডমিন প্যানেল আনলক হয়েছে।`,
+      type: 'success'
+    });
+    setTimeout(() => setFeedbackMsg(null), 4000);
+  };
+
+  const handleRejectVerification = async (req: VerificationRequest) => {
+    const updatedReq: VerificationRequest = { ...req, status: 'Rejected' };
+    const updatedList = verificationRequests.map(r => r.id === req.id ? updatedReq : r);
+    setVerificationRequests(updatedList);
+    try {
+      localStorage.setItem('chaopaopay_verification_requests', JSON.stringify(updatedList));
+    } catch (e) {}
+
+    if (database) {
+      try {
+        await set(ref(database, `verification_requests/${req.id}`), updatedReq);
+      } catch (e) {}
+    }
+
+    setFeedbackMsg({
+      text: `ভেরিফিকেশন রিকোয়েস্ট বাতিল করা হয়েছে।`,
+      type: 'error'
+    });
+    setTimeout(() => setFeedbackMsg(null), 3000);
   };
 
   const pendingDeposits = transactions.filter(t => t.type === 'Payin' && t.status === 'Pending' && (isSuperAdmin || t.merchantId === merchant.merchantId));
@@ -259,7 +391,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full lg:w-auto">
             <div className="bg-amber-50/50 border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center">
               <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Pending Deposits</p>
               <p className="text-base font-black text-amber-900">{pendingDeposits.length}</p>
@@ -268,7 +400,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Pending Payouts</p>
               <p className="text-base font-black text-amber-900">{pendingWithdrawals.length}</p>
             </div>
-            <div className="bg-emerald-50/50 border border-emerald-100 p-2 sm:p-2.5 rounded-2xl text-center col-span-2 sm:col-span-1">
+            <div className="bg-purple-50/50 border border-purple-100 p-2 sm:p-2.5 rounded-2xl text-center">
+              <p className="text-[8px] font-bold text-purple-700 uppercase tracking-wider mb-0.5">Verifications</p>
+              <p className="text-base font-black text-purple-900">
+                {verificationRequests.filter(r => r.status === 'Pending').length}
+              </p>
+            </div>
+            <div className="bg-emerald-50/50 border border-emerald-100 p-2 sm:p-2.5 rounded-2xl text-center">
               <p className="text-[8px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5">System Balance</p>
               <p className="text-[11px] font-black text-emerald-900 truncate px-1">{formatBDT(merchant.balance)}</p>
             </div>
@@ -283,6 +421,154 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           }`}>
             {feedbackMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
             <span className="leading-tight">{feedbackMsg.text}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Verification & Partner Requests (Pending Submissions) */}
+      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-2xs">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-gray-900 text-sm sm:text-base flex items-center gap-2">
+                <span>ভেরিফিকেশন ও পার্টনার রিকোয়েস্ট</span>
+                {verificationRequests.filter(r => r.status === 'Pending').length > 0 && (
+                  <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                    {verificationRequests.filter(r => r.status === 'Pending').length} Pending
+                  </span>
+                )}
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                মার্চেন্ট কর্তৃক সাবমিট করা ১৩৫০ টাকা পেমেন্ট ও পার্টনার এজেন্ট আবেদন তথ্য
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200/60">
+            মোট রিকোয়েস্ট: {verificationRequests.length}
+          </span>
+        </div>
+
+        {verificationRequests.length === 0 ? (
+          <div className="p-8 text-center text-gray-400 font-medium italic text-xs bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+            এখনও কোনো ভেরিফিকেশন রিকোয়েস্ট জমা পড়েনি। মার্চেন্ট ইন-এক্টিভ পেজ থেকে সাবমিট করলে এখানে দেখতে পাবেন।
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+            {verificationRequests.map((req) => {
+              const isPending = req.status === 'Pending';
+              return (
+                <div 
+                  key={req.id} 
+                  className={`p-4 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                    isPending 
+                      ? 'bg-amber-50/40 border-amber-200 shadow-xs' 
+                      : req.status === 'Approved'
+                      ? 'bg-emerald-50/20 border-emerald-100'
+                      : 'bg-gray-50/60 border-gray-100'
+                  }`}
+                >
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-black text-gray-900 text-xs bg-white px-2 py-0.5 rounded-lg border border-gray-200">
+                        {req.merchantId}
+                      </span>
+                      <span className="font-bold text-gray-800 text-xs sm:text-sm">
+                        {req.merchantName}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tight ${
+                        req.type === 'GATEWAY_1350' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {req.type === 'GATEWAY_1350' ? 'Gateway 1350 BDT' : 'Partner Agent'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                        isPending 
+                          ? 'bg-amber-100 text-amber-800 animate-pulse' 
+                          : req.status === 'Approved'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {req.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-[11px] text-gray-600">
+                      {req.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-400">📞 Phone:</span>
+                          <span className="font-mono font-bold text-gray-900">{req.phone}</span>
+                        </div>
+                      )}
+                      {req.trxId && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-400">💳 TrxID:</span>
+                          <span className="font-mono font-black text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-100 select-all">
+                            {req.trxId}
+                          </span>
+                        </div>
+                      )}
+                      {req.amount && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-400">💰 Fee:</span>
+                          <span className="font-black text-emerald-700">{req.amount} {req.currency || 'BDT'}</span>
+                        </div>
+                      )}
+                      {req.nidNumber && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-400">🆔 NID:</span>
+                          <span className="font-mono text-gray-800">{req.nidNumber}</span>
+                        </div>
+                      )}
+                      {req.whatsapp && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-400">💬 WhatsApp:</span>
+                          <span className="text-gray-800">{req.whatsapp}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 text-gray-400">
+                        <span>🕒 {new Date(req.submittedAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isPending ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleApproveVerification(req)}
+                          className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>অনুমোদন ও এক্টিভ করুন</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectVerification(req)}
+                          className="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition border border-red-200 cursor-pointer"
+                        >
+                          বাতিল
+                        </button>
+                      </>
+                    ) : req.status === 'Approved' ? (
+                      <span className="inline-flex items-center gap-1 text-emerald-700 text-xs font-bold bg-emerald-100/70 px-3 py-1.5 rounded-xl">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>সক্রিয় অনুমোদিত</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-red-700 text-xs font-bold bg-red-100/70 px-3 py-1.5 rounded-xl">
+                        <XCircle className="w-4 h-4" />
+                        <span>বাতিলকৃত</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

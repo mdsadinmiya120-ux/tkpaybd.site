@@ -140,12 +140,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex items-center gap-3">
                   <span>{isAccountActive ? '🟢' : '🔴'}</span>
                   <span className="tracking-wide">
-                    {isAccountActive ? 'Partner Verify' : 'Verify Account'}
+                    {isAccountActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                {isAccountActive && (
+                {isAccountActive ? (
                   <span className="text-[9px] bg-emerald-200/80 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md">
-                    {isPartnerAgentApproved ? 'Partner' : 'Merchant'}
+                    Verified
+                  </span>
+                ) : (
+                  <span className="text-[9px] bg-red-200/80 text-red-800 font-bold px-1.5 py-0.5 rounded-md">
+                    Unverified
                   </span>
                 )}
               </button>

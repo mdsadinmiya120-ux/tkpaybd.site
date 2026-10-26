@@ -45,13 +45,6 @@ const Home = () => {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
            <div className="flex items-center gap-2.5">
-             <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-md shrink-0">
-               <img 
-                 src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjmTmkRzTlTL7cPJbnOZVeCuyoJw8wLd4-Nm1fgr_XpiBsbe6na7LozF8YRpTQDKrbAMewkhZkcyH6a5S92l-uwrs85TVXnt9V_diWaPTCLdkuuLgDjzn37aMY-Z1Fbdwjlmgd8vUPgQvR5zX9SdSoCwMKA6fnqWOPZEMgvgRzvM3b856zUdP3O4hpOpgo/s640/IMG_20261020_165816_710.jpg" 
-                 alt="TKPayBD Logo" 
-                 className="w-full h-full object-cover"
-               />
-             </div>
              <span className="text-xl sm:text-2xl font-black tracking-tighter italic">
                <span className="text-white">T</span><span className="text-[#eb6a24]">K</span>pay<span className="text-emerald-500 ml-0.5">BD</span>
              </span>

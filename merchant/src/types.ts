@@ -55,3 +55,20 @@ export interface MerchantProfile {
   feeType?: 'Commission' | 'Charge';
 }
 
+export interface VerificationRequest {
+  id: string;
+  merchantId: string;
+  merchantName: string;
+  type: 'GATEWAY_1350' | 'PARTNER_AGENT';
+  title: string;
+  phone: string;
+  trxId?: string;
+  nidNumber?: string;
+  whatsapp?: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  submittedAt: string;
+}
+
