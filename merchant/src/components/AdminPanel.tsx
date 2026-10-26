@@ -241,89 +241,76 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-3 sm:space-y-4 pb-16">
       {/* Top Header Card */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 mb-0.5">
               <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
-                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                <ShieldCheck className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
               </span>
-              <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">
-                {isSuperAdmin ? 'Admin Panel (এডমিন প্যানেল)' : `Merchant Panel - ডিপোজিট/উত্তোলন কন্ট্রোল (${merchant.merchantId})`}
+              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight">
+                {isSuperAdmin ? 'Admin Control Center' : 'Merchant Dashboard Control'}
               </h2>
             </div>
-            <p className="text-xs text-gray-500">
-              {isSuperAdmin ? 'ডিপোজিট ও উত্তোলন অনুমোদন করুন।' : 'আপনার মার্চেন্ট লিংকের ডিপোজিট ও উত্তোলনসমূহ যাচাই, অনুমোদন বা বাতিল করুন।'}
+            <p className="text-[10px] text-gray-500 font-medium">
+              {isSuperAdmin ? 'Global system management and approval portal.' : 'Manage your gateway deposits and withdrawals.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-xl text-center">
-              <p className="text-[10px] font-bold text-amber-700 uppercase">পেন্ডিং ডিপোজিট</p>
-              <p className="text-lg font-extrabold text-amber-900">{pendingDeposits.length}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 w-full lg:w-auto">
+            <div className="bg-amber-50/50 border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center">
+              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Pending Deposits</p>
+              <p className="text-base font-black text-amber-900">{pendingDeposits.length}</p>
             </div>
-            <div className="bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-xl text-center">
-              <p className="text-[10px] font-bold text-amber-700 uppercase">পেন্ডিং উত্তোলন</p>
-              <p className="text-lg font-extrabold text-amber-900">{pendingWithdrawals.length}</p>
+            <div className="bg-amber-50/50 border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center">
+              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Pending Payouts</p>
+              <p className="text-base font-black text-amber-900">{pendingWithdrawals.length}</p>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl text-center">
-              <p className="text-[10px] font-bold text-emerald-700 uppercase">কারেন্ট ব্যালেন্স</p>
-              <p className="text-sm font-extrabold text-emerald-900">{formatBDT(merchant.balance)}</p>
+            <div className="bg-emerald-50/50 border border-emerald-100 p-2 sm:p-2.5 rounded-2xl text-center col-span-2 sm:col-span-1">
+              <p className="text-[8px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5">System Balance</p>
+              <p className="text-[11px] font-black text-emerald-900 truncate px-1">{formatBDT(merchant.balance)}</p>
             </div>
           </div>
         </div>
 
         {feedbackMsg && (
-          <div className={`mt-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+          <div className={`mt-3 p-2.5 rounded-2xl text-[11px] font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${
             feedbackMsg.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
-              : 'bg-red-50 text-red-800 border border-red-200'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs' 
+              : 'bg-red-50 text-red-800 border border-red-200 shadow-xs'
           }`}>
             {feedbackMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
-            <span>{feedbackMsg.text}</span>
+            <span className="leading-tight">{feedbackMsg.text}</span>
           </div>
         )}
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-indigo-50/90 border border-indigo-200 rounded-2xl p-4 text-xs text-indigo-900 space-y-1 shadow-2xs">
-        <p className="font-extrabold text-sm flex items-center gap-2 text-indigo-800">
-          <span>🛡️</span>
-          <span>ডিপোজিট ও উত্তোলন যাচাই ও অনুমোদন প্যানেল</span>
-        </p>
-        <p className="text-gray-700 leading-relaxed">
-          আপনার মার্চেন্ট লিংক থেকে আসা ডিপোজিট বা উত্তোলনের অনুরোধসমূহ যাচাই করে <strong>Approve (অনুমোদন)</strong> অথবা <strong>Reject (বাতিল)</strong> করুন।
-        </p>
-      </div>
-
-      {/* Master Admin: Partner Agent Account Active/Inactive Control Panel */}
+      {/* Master Admin: Account Control */}
       {isSuperAdmin && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
-          <div className="border-b border-gray-100 pb-3 flex items-center justify-between flex-wrap gap-2">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-50 pb-4">
             <div>
-              <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-2">
-                <Users className="w-4 h-4 text-indigo-600" />
-                <span>পার্টনার এজেন্ট অ্যাকাউন্ট অ্যাক্টিভেশন কন্ট্রোল (Master Admin)</span>
+              <h3 className="font-extrabold text-gray-900 text-sm sm:text-base flex items-center gap-2">
+                <Users className="w-4.5 h-4.5 text-indigo-600" />
+                <span>Account Management</span>
               </h3>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                মাস্টার এডমিন থেকে যেকোনো পার্টনার এজেন্ট অ্যাকাউন্ট একটিভ বা ইনঅ্যাক্টিভ করুন। একটিভ হলে এজেন্ট সাথে সাথে এডমিন প্যানেল দেখতে পারবে।
-              </p>
+              <p className="text-[11px] text-gray-500 mt-0.5">Control partner agent access and status.</p>
             </div>
             <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="এজেন্ট আইডি/ফোন/নাম দিয়ে খুঁজুন..."
+                placeholder="ID, Name, or Phone..."
                 value={accountSearch}
                 onChange={(e) => setAccountSearch(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-indigo-600 focus:bg-white font-medium"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-indigo-600 focus:bg-white font-medium transition"
               />
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden bg-white max-h-72 overflow-y-auto text-xs">
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
             {allAccounts.filter(acc => {
               if (!accountSearch.trim()) return true;
               const term = accountSearch.toLowerCase();
@@ -334,8 +321,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 (acc.email && acc.email.toLowerCase().includes(term))
               );
             }).length === 0 ? (
-              <div className="p-8 text-center text-gray-400">
-                কোনো পার্টনার এজেন্ট বা মার্চেন্ট অ্যাকাউন্ট পাওয়া যায়নি।
+              <div className="p-10 text-center text-gray-400 font-medium italic text-xs">
+                No accounts found matching your search.
               </div>
             ) : (
               allAccounts
@@ -361,68 +348,63 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   );
 
                   return (
-                    <div key={acc.merchantId} className="p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-gray-50/80 transition">
-                      <div className="space-y-1">
+                    <div key={acc.merchantId} className="p-4 border border-gray-50 rounded-2xl bg-gray-50/30 hover:bg-gray-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-2 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-gray-900 text-sm">
+                          <span className="font-mono font-black text-gray-900 text-xs sm:text-sm bg-white px-2 py-0.5 rounded-lg border border-gray-100">
                             {acc.merchantId}
                           </span>
-                          <span className="font-bold text-gray-800">
-                            {acc.name || 'Agent'}
+                          <span className="font-bold text-gray-800 truncate max-w-[120px] sm:max-w-none">
+                            {acc.name || 'Merchant'}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
-                            isActive
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              : 'bg-rose-100 text-rose-800 border border-rose-200'
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tight ${
+                            isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {isActive ? '🟢 Active (একটিভ - অনুমোদিত)' : '🔴 Inactive (ইনঅ্যাক্টিভ - অননুমোদিত)'}
+                            {isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
-                        <div className="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap">
-                          <span>Phone: <strong className="text-gray-700 font-mono">{acc.phone || 'N/A'}</strong></span>
-                          <span>•</span>
-                          <span>Email: <strong className="text-gray-700">{acc.email || 'N/A'}</strong></span>
-                          <span>•</span>
-                          <span>Payin Fee: <strong className="text-emerald-600">{acc.commissionPayin ?? 0}%</strong></span>
-                          <span>•</span>
-                          <span>Payout Fee: <strong className="text-emerald-600">{acc.commissionPayout ?? 0}%</strong></span>
+                        <div className="grid grid-cols-2 sm:flex sm:items-center gap-y-1 gap-x-4 text-[10px] sm:text-[11px] text-gray-500 font-medium">
+                          <span className="truncate">📞 <span className="text-gray-700">{acc.phone || 'N/A'}</span></span>
+                          <span className="truncate hidden md:inline">📧 <span className="text-gray-700">{acc.email || 'N/A'}</span></span>
+                          <span className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">In: {acc.commissionPayin ?? 0}%</span>
+                          <span className="text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">Out: {acc.commissionPayout ?? 0}%</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <div className="flex items-center gap-2 shrink-0">
                         {isAccountMaster ? (
-                          <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg border border-purple-200">
-                            👑 Master Admin
+                          <span className="text-[10px] font-black bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1.5 rounded-xl shadow-sm">
+                            Master Admin
                           </span>
                         ) : (
-                          <>
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
                             <button
                               type="button"
                               onClick={() => handleToggleAccountStatus(acc, true)}
                               disabled={isActive}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 cursor-pointer ${
+                              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-bold text-[11px] transition flex items-center justify-center gap-1.5 ${
                                 isActive
-                                  ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
-                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                                  ? 'bg-gray-100 text-gray-400 border border-gray-100 cursor-not-allowed'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-200'
                               }`}
                             >
                               <UserCheck className="w-3.5 h-3.5" />
-                              <span>একটিভ করুন</span>
+                              <span>Active</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleToggleAccountStatus(acc, false)}
                               disabled={!isActive}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 cursor-pointer ${
+                              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl font-bold text-[11px] transition flex items-center justify-center gap-1.5 ${
                                 !isActive
-                                  ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
-                                  : 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
+                                  ? 'bg-gray-100 text-gray-400 border border-gray-100 cursor-not-allowed'
+                                  : 'bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-200'
                               }`}
                             >
                               <UserX className="w-3.5 h-3.5" />
-                              <span>ইনঅ্যাক্টিভ করুন</span>
+                              <span>Inactive</span>
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -433,40 +415,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* Deposit Numbers Management Section */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
-        <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
-          <h3 className="font-extrabold text-gray-900 text-sm">ডিপোজিট নম্বর ম্যানেজমেন্ট (অ্যাড ও র্যান্ডম শো)</h3>
-          <span className="text-xs bg-indigo-50 text-indigo-700 font-bold px-2 py-1 rounded-lg">মোট নম্বর: {depositNumbers.length}</span>
+      {/* Deposit Numbers Management */}
+      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
+        <div className="flex items-center justify-between border-b border-gray-50 pb-4">
+          <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">Wallet Management</h3>
+          <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-xl">Count: {depositNumbers.length}</span>
         </div>
 
-        <form onSubmit={handleAddNumber} className="bg-gray-50 p-4 rounded-xl border border-gray-200/80 space-y-3 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-gray-700 mb-1">পেমেন্ট মেথড</label>
+        <form onSubmit={handleAddNumber} className="bg-gray-50/50 p-4 sm:p-5 rounded-2xl border border-gray-200/80 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Method</label>
               <select
                 value={newNumMethod}
                 onChange={(e) => setNewNumMethod(e.target.value as any)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-900"
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
               >
                 <option value="bKash">bKash</option>
                 <option value="Nagad">Nagad</option>
                 <option value="Rocket">Rocket</option>
               </select>
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-gray-700 mb-1">রিসিভার নম্বর</label>
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Wallet Number</label>
               <input
                 type="text"
                 required
-                placeholder="যেমন: 123456789"
+                placeholder="e.g. 017XXXXXXXX"
                 value={newNumVal}
                 onChange={(e) => setNewNumVal(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-gray-900"
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
               />
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-gray-700 mb-1">সর্বোচ্চ লিমিট (BDT)</label>
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+              <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">Max Limit (BDT)</label>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -474,55 +456,71 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   placeholder="50000"
                   value={newNumLimit}
                   onChange={(e) => setNewNumLimit(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-700"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
                 />
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl transition cursor-pointer shrink-0"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl transition shadow-md shadow-indigo-100 active:scale-95 shrink-0 text-xs"
                 >
-                  + Add
+                  Add Wallet
                 </button>
               </div>
             </div>
           </div>
         </form>
 
-        <div className="space-y-2">
-          <p className="font-bold text-xs text-gray-700">সংরক্ষিত ডিপোজিট নম্বরসমূহ ও লিমিট (৫০ হাজার বা নির্ধারিত লিমিট পূর্ণ হলে অটো বাদ যাবে):</p>
-          <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden bg-white max-h-56 overflow-y-auto text-xs">
+        <div className="space-y-3">
+          <p className="font-bold text-[11px] text-gray-400 uppercase tracking-widest px-1">Active Wallets</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
             {depositNumbers.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">কোনো নম্বর যোগ করা হয়নি।</div>
+              <div className="col-span-2 p-10 text-center text-gray-400 font-medium italic text-xs">No wallets configured.</div>
             ) : (
               depositNumbers.map((item, idx) => {
-                // calculate used amount from transactions
                 const usedAmount = transactions
                   .filter(t => t.walletNumber === item.number && (t.status === 'Success' || t.status === 'Pending'))
                   .reduce((sum, t) => sum + t.amount, 0);
                 const isExceeded = usedAmount >= item.limit;
 
                 return (
-                  <div key={idx} className="p-3 flex items-center justify-between hover:bg-gray-50 transition gap-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        item.method === 'bKash' ? 'bg-pink-100 text-pink-700' :
-                        item.method === 'Nagad' ? 'bg-orange-100 text-orange-700' :
-                        'bg-purple-100 text-purple-700'
-                      }`}>
-                        {item.method}
-                      </span>
-                      <span className="font-mono font-bold text-gray-900">{item.number}</span>
-                      <span className="text-gray-500 font-semibold">Limit: ৳{item.limit.toLocaleString()}</span>
-                      <span className={`font-bold ${isExceeded ? 'text-red-600' : 'text-emerald-600'}`}>
-                        Used: ৳{usedAmount.toLocaleString()} {isExceeded ? '(Exceeded / Locked)' : ''}
-                      </span>
+                  <div key={idx} className="p-4 border border-gray-100 rounded-2xl bg-white hover:border-indigo-100 transition group">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                            item.method === 'bKash' ? 'bg-pink-100 text-pink-700' :
+                            item.method === 'Nagad' ? 'bg-orange-100 text-orange-700' :
+                            'bg-purple-100 text-purple-700'
+                          }`}>
+                            {item.method}
+                          </span>
+                          <span className="font-mono font-bold text-gray-900 text-sm">{item.number}</span>
+                        </div>
+                        <div className="space-y-1">
+                           <div className="flex items-center justify-between text-[10px] font-bold text-gray-500">
+                             <span>Progress</span>
+                             <span className={isExceeded ? 'text-red-600' : 'text-emerald-600'}>
+                                {Math.round((usedAmount / item.limit) * 100)}%
+                             </span>
+                           </div>
+                           <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all duration-500 ${isExceeded ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                style={{ width: `${Math.min(100, (usedAmount / item.limit) * 100)}%` }}
+                              ></div>
+                           </div>
+                           <p className="text-[10px] text-gray-400 font-medium">
+                              Used: <span className="text-gray-700">৳{usedAmount.toLocaleString()}</span> / ৳{item.limit.toLocaleString()}
+                           </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNumber(idx)}
+                        className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteNumber(idx)}
-                      className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded-lg font-semibold transition border border-red-200 cursor-pointer text-[11px] shrink-0"
-                    >
-                      Delete
-                    </button>
                   </div>
                 );
               })
@@ -531,146 +529,158 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* List Filters */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 -mx-1 px-1 custom-scrollbar">
           <button
-            type="button"
             onClick={() => setFilterType('PendingDeposit')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              filterType === 'PendingDeposit' ? 'bg-amber-500 text-white' : 'bg-gray-50 text-gray-700'
+            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
+              filterType === 'PendingDeposit' ? 'bg-amber-500 text-white shadow-md shadow-amber-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Pending Deposits</span>
+            Pending Deposits
           </button>
           <button
-            type="button"
             onClick={() => setFilterType('PendingWithdrawal')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              filterType === 'PendingWithdrawal' ? 'bg-amber-500 text-white' : 'bg-gray-50 text-gray-700'
+            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
+              filterType === 'PendingWithdrawal' ? 'bg-amber-500 text-white shadow-md shadow-amber-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Pending Withdrawals</span>
+            Pending Payouts
           </button>
           <button
-            type="button"
             onClick={() => setFilterType('AllDeposit')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              filterType === 'AllDeposit' ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-gray-700'
+            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
+              filterType === 'AllDeposit' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <span>All Deposits</span>
+            All Deposits
           </button>
           <button
-            type="button"
             onClick={() => setFilterType('AllWithdrawal')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              filterType === 'AllWithdrawal' ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-gray-700'
+            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
+              filterType === 'AllWithdrawal' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
             }`}
           >
-            <span>All Withdrawals</span>
+            All Payouts
           </button>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+        <div className="relative">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search transactions..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-indigo-600 focus:bg-white"
+            className="w-full md:w-64 bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-indigo-600 focus:bg-white transition font-medium"
           />
         </div>
       </div>
 
       {/* Approval List */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="font-extrabold text-gray-900 text-sm">
-            {filterType === 'PendingDeposit' ? 'Pending Deposit Requests' :
-             filterType === 'PendingWithdrawal' ? 'Pending Withdrawal Requests' :
-             filterType === 'AllDeposit' ? 'All Deposit History' : 'All Withdrawal History'}
-             ({displayList.length})
+        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+          <h3 className="font-black text-gray-900 text-xs sm:text-sm tracking-tight">
+            Transaction Requests ({displayList.length})
           </h3>
         </div>
 
-        {displayList.length === 0 ? (
-          <div className="p-12 text-center text-gray-400">
-            <p className="font-bold text-gray-700 text-sm">কোনো অনুরোধ নেই</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {displayList.map((tx) => {
+        <div className="divide-y divide-gray-50">
+          {displayList.length === 0 ? (
+            <div className="p-16 text-center text-gray-400 font-medium italic text-xs bg-white">
+              No transactions found in this view.
+            </div>
+          ) : (
+            displayList.map((tx) => {
               const isPending = tx.status === 'Pending';
               return (
-                <div key={tx.id} className="p-4 sm:p-5 hover:bg-gray-50/60 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-bold text-gray-900 text-sm">
+                <div key={tx.id} className="p-4 sm:p-6 hover:bg-gray-50/60 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+                  <div className="space-y-2 flex-1 min-w-0 w-full sm:w-auto">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono font-black text-gray-900 text-[10px] sm:text-xs bg-white px-1.5 py-0.5 rounded-lg border border-gray-100">
                         {tx.transactionId}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                      <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tight ${
                         tx.type === 'Payin' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
                       }`}>
-                        {tx.type === 'Payin' ? 'Deposit' : 'Withdrawal'}
+                        {tx.type === 'Payin' ? 'Deposit' : 'Payout'}
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                        tx.status === 'Success' ? 'bg-emerald-100 text-emerald-800' :
-                        tx.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
-                        'bg-red-100 text-red-800'
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                        tx.status === 'Success' ? 'bg-emerald-50 text-emerald-700' :
+                        tx.status === 'Pending' ? 'bg-amber-50 text-amber-700 animate-pulse' :
+                        'bg-red-50 text-red-700'
                       }`}>
                         {tx.status}
                       </span>
                     </div>
 
-                    <div className="text-xs text-gray-500">
-                      <span>Sender: <strong className="text-gray-700">{tx.customerPhone || 'N/A'}</strong></span>
-                      <span className="mx-2">•</span>
-                      <span>Date: <span className="text-gray-700">{new Date(tx.createdAt).toLocaleString()}</span></span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 gap-x-3 text-[10px] text-gray-500 font-medium">
+                      <span className="flex items-center gap-1 truncate">
+                         <span className="text-gray-400">👤</span>
+                         <span className="text-gray-700 font-bold truncate max-w-[120px]">{tx.customerPhone || 'Unknown'}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                         <span className="text-gray-400">📅</span>
+                         <span className="text-gray-700">{new Date(tx.createdAt).toLocaleString()}</span>
+                      </span>
+                      {tx.method && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-gray-400">💳</span>
+                          <span className="text-gray-700 font-bold">{tx.method}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                    <div className="text-right">
-                      <p className="text-[10px] text-gray-400 font-semibold uppercase">Amount</p>
+                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-50">
+                    <div className="text-left sm:text-right">
+                      <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest mb-0.5">Amount</p>
                       <p className="text-base font-black text-emerald-700">
                         {formatBDT(tx.amount)}
                       </p>
                     </div>
 
                     {isPending ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleApprove(tx)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-[10px] font-black transition shadow-md shadow-emerald-100 active:scale-95 cursor-pointer"
                         >
                           Approve
                         </button>
                         <button
                           type="button"
                           onClick={() => handleReject(tx)}
-                          className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-semibold transition border border-red-200 cursor-pointer"
+                          className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl text-[10px] font-bold transition border border-red-100 cursor-pointer active:scale-95"
                         >
                           Reject
                         </button>
                       </div>
                     ) : (
-                      <span className={`text-xs font-bold px-3 py-1.5 rounded-xl ${
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-xl font-black text-[9px] uppercase tracking-tight ${
                         tx.status === 'Success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
                       }`}>
-                        {tx.status === 'Success' ? '✓ Approved' : '✕ Rejected'}
-                      </span>
+                        {tx.status === 'Success' ? (
+                          <>
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            <span>Approved</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-2.5 h-2.5" />
+                            <span>Rejected</span>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </div>
     </div>
   );

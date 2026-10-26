@@ -16,24 +16,20 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
   merchant, 
   onUpdateMerchant 
 }) => {
-  const isAccountExplicitlyInactive = Boolean(
-    merchant.isActive === false ||
-    merchant.partnershipStatus === 'Inactive' ||
-    merchant.partnershipStatus === 'Rejected' ||
-    merchant.kycStatus === 'Pending' ||
-    merchant.kycStatus === 'Unverified' ||
-    merchant.status === 'Inactive' ||
-    merchant.isApproved === false
+  const isAccountActive = Boolean(
+    merchant.isActive === true && 
+    merchant.status === 'Active' && 
+    merchant.isApproved === true
   );
 
   const isPartnerApproved = Boolean(
-    !isAccountExplicitlyInactive &&
+    isAccountActive && 
     (merchant.isPartnerAgent === true || merchant.partnershipStatus === 'Approved')
   );
 
   const isGatewayActive = Boolean(
-    !isAccountExplicitlyInactive &&
-    (merchant.accountType === 'Payment Gateway Use' || isPartnerApproved)
+    isAccountActive && 
+    merchant.accountType === 'Payment Gateway Use'
   );
   const isPartnerPending = merchant.partnershipStatus === 'Pending Verification';
   const [showPartnershipForm, setShowPartnershipForm] = useState(false);
@@ -336,29 +332,29 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Partnership Agent Card */}
-        <div className={`bg-white rounded-2xl p-6 shadow-sm border transition space-y-4 ${
+        <div className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition space-y-3 ${
           isPartnerApproved ? 'border-emerald-300 bg-emerald-50/20 shadow-md ring-1 ring-emerald-200' : 'border-gray-100 hover:shadow-md'
         }`}>
           <div className="flex items-center justify-between">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xs ${
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-2xs ${
               isPartnerApproved ? 'bg-emerald-500 text-white' : 'bg-indigo-50 text-indigo-600'
             }`}>
-              {isPartnerApproved ? <ShieldCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />}
+              {isPartnerApproved ? <ShieldCheck className="w-5 h-5" /> : <Users className="w-5 h-5" />}
             </div>
 
             {isPartnerApproved ? (
-              <span className="px-3.5 py-1 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center gap-1 shadow-2xs uppercase tracking-wide">
-                <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+              <span className="px-3 py-0.5 rounded-full bg-emerald-500 text-white font-black text-[10px] flex items-center gap-1 shadow-2xs uppercase tracking-wide">
+                <Check className="w-3 h-3 text-white stroke-[3]" />
                 <span>Active</span>
               </span>
             ) : isPartnerPending ? (
-              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 font-extrabold text-xs">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[10px]">
                 Pending Verification ⏳
               </span>
             ) : (
-              <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">
+              <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px]">
                 Inactive
               </span>
             )}
@@ -366,137 +362,87 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-lg font-bold text-gray-900">Partnership Agent</h3>
+              <h3 className="text-base font-bold text-gray-900">Partnership Agent</h3>
             </div>
             
             {isPartnerApproved ? (
               <div className="space-y-2">
-                <p className="text-xs text-emerald-900 font-bold leading-relaxed bg-emerald-100/90 p-3 rounded-xl border border-emerald-300">
-                  🎉 অভিনন্দন! আপনার একাউন্টটি মূল এডমিন প্যানেল থেকে <strong>Partnership Agent</strong> হিসেবে ভেরিফাই ও এপ্রুভ করা হয়েছে। স্ট্যাটাস: <span className="text-emerald-700 font-black">Active (সবুজে সক্রিয়)</span>। অ্যাকাউন্ট ভেরিফাইড হওয়ায় এতে আর পুনরায় প্রবেশ বা আবেদন করার প্রয়োজন নেই।
-                </p>
-                <p className="text-[11px] text-gray-500">
-                  Collaborate as a merchant partner or affiliate with higher limits and special commissions.
+                <p className="text-[11px] text-emerald-900 font-bold leading-relaxed bg-emerald-100/90 p-2.5 rounded-xl border border-emerald-300">
+                  🎉 অভিনন্দন! আপনার একাউন্টটি মূল এডমিন প্যানেল থেকে <strong>Partnership Agent</strong> হিসেবে ভেরিফাই ও এপ্রুভ করা হয়েছে। স্ট্যাটাস: <span className="text-emerald-700 font-black">Active</span>।
                 </p>
               </div>
             ) : isPartnerPending ? (
               <div className="space-y-2">
-                <p className="text-xs text-amber-800 font-medium leading-relaxed bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                <p className="text-[11px] text-amber-800 font-medium leading-relaxed bg-amber-50 p-2 rounded-xl border border-amber-200">
                   ⏳ আপনার পার্টনারশিপ আবেদন মূল এডমিন প্যানেলে জমা হয়েছে। মূল এডমিন প্যানেল থেকে এটি ভেরিফাই ও এপ্রুভ করার সাথে সাথে আপনার ড্যাশবোর্ডে <strong>Admin Panel</strong> প্রদর্শিত হবে।
-                </p>
-                <p className="text-[11px] text-gray-500">
-                  অপেক্ষার সময় সাপোর্ট টিমের সাথে টেলিগ্রামে যোগাযোগ করতে পারেন: @tkpaybd12
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Collaborate as a merchant partner or affiliate to access higher transaction volume caps and special commission rates.
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Collaborate as a merchant partner or affiliate to access higher transaction volume caps.
                 </p>
-                <p className="text-[11px] text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-200 font-medium">
-                  🔒 <strong>সিকিউরিটি নোট:</strong> মূল এডমিন প্যানেল থেকে পার্টনারশিপ এজেন্ট অ্যাকাউন্টটি ভেরিফাই ও এপ্রুভ করলেই কেবল ড্যাশবোর্ডে Admin Panel দেখা যাবে। Payment Gateway Use ব্যবহারকারীরা কখনোই এডমিন প্যানেল দেখতে পারবে না।
+                <p className="text-[10px] text-rose-700 bg-rose-50 p-2 rounded-xl border border-rose-200 font-medium">
+                  🔒 এডমিন প্যানেল থেকে এপ্রুভ করলেই কেবল Admin Panel দেখা যাবে।
                 </p>
               </div>
             )}
           </div>
 
-          <div className="pt-2 space-y-2">
+          <div className="pt-1">
             {isPartnerApproved ? (
               <button
                 type="button"
                 disabled
-                className="w-full bg-emerald-100 text-emerald-800 font-extrabold py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed border border-emerald-300 shadow-2xs"
+                className="w-full bg-emerald-100 text-emerald-800 font-extrabold py-2.5 rounded-xl text-[10px] flex items-center justify-center gap-2 cursor-not-allowed border border-emerald-300 shadow-2xs"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>অ্যাকাউন্ট ভেরিফাইড ও অ্যাক্টিভ (Active - প্রবেশ বন্ধ)</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>অ্যাকাউন্ট ভেরিফাইড ও অ্যাক্টিভ</span>
               </button>
             ) : isPartnerPending ? (
               <button
                 type="button"
                 disabled
-                className="w-full bg-amber-100 text-amber-800 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-90"
+                className="w-full bg-amber-100 text-amber-800 font-bold py-2.5 rounded-xl text-[10px] flex items-center justify-center gap-2 cursor-not-allowed opacity-90"
               >
-                <span>আবেদন পেন্ডিং রয়েছে (Waiting for Approval)</span>
+                <span>আবেদন পেন্ডিং রয়েছে</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setShowPartnershipForm(true)}
-                className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 border border-gray-200 cursor-pointer"
+                className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-2 border border-gray-200 cursor-pointer"
               >
                 <span>Request Partnership Access</span>
-                <ArrowRight className="w-4 h-4 text-gray-500" />
+                <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
               </button>
             )}
-
-            {/* Quick Main Admin Verification Simulator Button (for testing & owner verification) */}
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
-              <span className="text-gray-400 font-medium">Main Admin Action:</span>
-              {isPartnerApproved ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const updated: MerchantProfile = {
-                      ...merchant,
-                      isPartnerAgent: false,
-                      partnershipStatus: 'None'
-                    };
-                    if (onUpdateMerchant) onUpdateMerchant(updated);
-                    try {
-                      localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
-                    } catch (e) {}
-                  }}
-                  className="text-red-600 hover:text-red-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Revoke Agent (ইনএকটিভ করুন)</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const updated: MerchantProfile = {
-                      ...merchant,
-                      isPartnerAgent: true,
-                      partnershipStatus: 'Approved'
-                    };
-                    if (onUpdateMerchant) onUpdateMerchant(updated);
-                    try {
-                      localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
-                    } catch (e) {}
-                  }}
-                  className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <ShieldCheck className="w-3 h-3 text-indigo-600" />
-                  <span>[Main Admin] Approve Partner Agent</span>
-                </button>
-              )}
-            </div>
           </div>
         </div>
 
         {/* 2. Payment Gateway Use Card */}
         <div 
           onClick={openGatewayModal}
-          className={`bg-white rounded-2xl p-6 shadow-sm border transition space-y-4 ${
+          className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition space-y-3 ${
             isGatewayActive
               ? 'border-emerald-300 bg-emerald-50/20 shadow-md ring-1 ring-emerald-200 cursor-default'
               : 'border-gray-100 hover:shadow-md hover:border-gray-200 cursor-pointer'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xs ${
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-2xs ${
               isGatewayActive ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600'
             }`}>
-              <Server className="w-6 h-6" />
+              <Server className="w-5 h-5" />
             </div>
 
             {isGatewayActive ? (
-              <span className="px-3.5 py-1 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center gap-1 shadow-2xs uppercase tracking-wide">
-                <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+              <span className="px-3 py-0.5 rounded-full bg-emerald-500 text-white font-black text-[10px] flex items-center gap-1 shadow-2xs uppercase tracking-wide">
+                <Check className="w-3 h-3 text-white stroke-[3]" />
                 <span>Active</span>
               </span>
             ) : (
-              <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">
+              <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px]">
                 Inactive
               </span>
             )}
@@ -504,33 +450,33 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-lg font-bold text-gray-900">Payment Gateway Use</h3>
+              <h3 className="text-base font-bold text-gray-900">Payment Gateway Use</h3>
             </div>
             {isGatewayActive ? (
               <div className="space-y-2">
-                <p className="text-xs text-emerald-900 font-bold leading-relaxed bg-emerald-100/90 p-3 rounded-xl border border-emerald-300">
-                  🎉 আপনার <strong>Payment Gateway Service</strong> অ্যাক্টিভ ও ভেরিফাইড রয়েছে। স্ট্যাটাস: <span className="text-emerald-700 font-black">Active (সবুজে সক্রিয়)</span>। অ্যাকাউন্ট সক্রিয় থাকায় সার্ভিস কনফিগারেশন ফর্মে আর প্রবেশ করা যাবে না।
+                <p className="text-[11px] text-emerald-900 font-bold leading-relaxed bg-emerald-100/90 p-2.5 rounded-xl border border-emerald-300">
+                  🎉 আপনার <strong>Payment Gateway Service</strong> অ্যাক্টিভ ও ভেরিফাইড রয়েছে।
                 </p>
-                <p className="text-[11px] text-gray-500">
-                  Connect automated agent accounts for direct cash-in and cash-out processing with real-time webhook callbacks.
+                <p className="text-[10px] text-gray-500">
+                  Connect automated agent accounts for direct cash-in and cash-out processing.
                 </p>
               </div>
             ) : (
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Connect automated agent accounts for direct cash-in and cash-out processing with real-time webhook callbacks.
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Connect automated agent accounts for direct cash-in and cash-out processing with real-time callbacks.
               </p>
             )}
           </div>
 
-          <div className="pt-2">
+          <div className="pt-1">
             {isGatewayActive ? (
               <button
                 type="button"
                 disabled
-                className="w-full bg-emerald-100 text-emerald-800 font-extrabold py-3 rounded-xl text-xs flex items-center justify-center gap-2 cursor-not-allowed border border-emerald-300 shadow-2xs"
+                className="w-full bg-emerald-100 text-emerald-800 font-extrabold py-2.5 rounded-xl text-[10px] flex items-center justify-center gap-2 cursor-not-allowed border border-emerald-300 shadow-2xs"
               >
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>সার্ভিস অ্যাক্টিভ রয়েছে (Active - প্রবেশ বন্ধ)</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>সার্ভিস অ্যাক্টিভ রয়েছে</span>
               </button>
             ) : (
               <button
@@ -539,10 +485,10 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                   e.stopPropagation();
                   openGatewayModal();
                 }}
-                className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 border border-gray-200 cursor-pointer"
+                className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-2 border border-gray-200 cursor-pointer"
               >
                 <span>Configure Payment Gateway</span>
-                <ArrowRight className="w-4 h-4 text-gray-500" />
+                <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
               </button>
             )}
           </div>

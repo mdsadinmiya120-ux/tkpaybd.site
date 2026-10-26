@@ -257,15 +257,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
   return (
     <div className="min-h-screen bg-white flex flex-col justify-between font-sans text-gray-900">
       {/* Main Container */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:px-6">
-        <div className="max-w-[420px] w-full mx-auto space-y-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-10 sm:px-6">
+        <div className="max-w-[420px] w-full mx-auto space-y-6">
           
           {/* Logo & Header */}
-          <div className="text-center space-y-4">
-            {/* Logo matching exact style: TK uppercase, T in navy blue #143d6b, K in orange #eb6a24 */}
-            <div className="flex items-center justify-center gap-2">
+          <div className="text-center space-y-3">
+            {/* Logo matching exact style: TK uppercase, T in white, K in orange #eb6a24 */}
+            <div className="flex items-center justify-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-md border border-gray-100 shrink-0">
+                <img 
+                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjmTmkRzTlTL7cPJbnOZVeCuyoJw8wLd4-Nm1fgr_XpiBsbe6na7LozF8YRpTQDKrbAMewkhZkcyH6a5S92l-uwrs85TVXnt9V_diWaPTCLdkuuLgDjzn37aMY-Z1Fbdwjlmgd8vUPgQvR5zX9SdSoCwMKA6fnqWOPZEMgvgRzvM3b856zUdP3O4hpOpgo/s640/IMG_20261020_165816_710.jpg" 
+                  alt="TKPayBD Logo" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <span className="font-extrabold text-3xl tracking-tight">
-                <span className="text-[#143d6b]">T</span>
+                <span className="text-gray-900">T</span>
                 <span className="text-[#eb6a24]">K</span>
                 <span className="text-[#1e293b] font-bold ml-0.5">pay</span>
               </span>
@@ -285,18 +292,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </div>
               </div>
 
-            <div className="space-y-1.5 pt-1">
-              <h1 className="text-2xl sm:text-[28px] font-bold text-gray-900 tracking-tight">
+            <div className="space-y-1 pt-0.5">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
                 Merchant Login
               </h1>
-              <p className="text-sm text-gray-500 font-normal">
+              <p className="text-[13px] text-gray-500 font-normal">
                 Sign in to access your merchant dashboard
               </p>
             </div>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+          <form onSubmit={handleSubmit} className="space-y-3 pt-0.5">
             {error && (
               <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-medium flex items-start gap-2.5 shadow-2xs animate-in fade-in">
                 <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -304,8 +311,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-gray-700 tracking-wider uppercase">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-700 tracking-wider uppercase ml-1">
                 MERCHANT ID OR PHONE
               </label>
               <input
@@ -313,13 +320,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Enter Merchant ID (e.g. M2024XXXX) or Phone"
-                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 shadow-2xs transition"
+                placeholder="Merchant ID or Phone"
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 shadow-2xs transition"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-gray-700 tracking-wider uppercase">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-gray-700 tracking-wider uppercase ml-1">
                 PASSWORD
               </label>
               <input
@@ -328,7 +335,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 shadow-2xs transition"
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 shadow-2xs transition"
               />
             </div>
 
@@ -336,7 +343,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#6366f1] hover:bg-[#5558eb] active:scale-[0.99] text-white font-semibold py-3.5 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 mt-2"
+              className="w-full bg-[#6366f1] hover:bg-[#5558eb] active:scale-[0.99] text-white font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 mt-1"
             >
               {loading ? (
                 <span>Signing in...</span>

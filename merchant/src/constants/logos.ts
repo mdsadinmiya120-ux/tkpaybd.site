@@ -4,4 +4,4 @@ export const ROCKET_LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29v
 
 export const NAGAD_LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhzrCYc1ssU5yxDf2tkJb9sT6EPBp9Q5rU0tVv__uPTvdJP9Rif5JOCgAVPbwkKKgj8y7L7ARZN7ImnT3ROIWkQMwrwZQBu5CljQstkoz-OOPjol04lP6EoF4chpgGvASbbx816EHVTVV5DwT-ohXU1x7-ekfY4ByZAI-BG9kPWFUIIzkRi1KhyphenhyphenQraxMGtX/s547/images%20(2).png';
 
-export const APP_LOGO_URL = '/assets/aistudio/IMG_20261020_165816_710_a0f769c0.jpg';
+export const APP_LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjmTmkRzTlTL7cPJbnOZVeCuyoJw8wLd4-Nm1fgr_XpiBsbe6na7LozF8YRpTQDKrbAMewkhZkcyH6a5S92l-uwrs85TVXnt9V_diWaPTCLdkuuLgDjzn37aMY-Z1Fbdwjlmgd8vUPgQvR5zX9SdSoCwMKA6fnqWOPZEMgvgRzvM3b856zUdP3O4hpOpgo/s640/IMG_20261020_165816_710.jpg';

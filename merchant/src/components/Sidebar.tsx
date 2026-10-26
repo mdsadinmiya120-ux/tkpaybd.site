@@ -66,20 +66,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Drawer */}
       <div className={`fixed top-0 left-0 bottom-0 w-72 bg-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Brand Header with Purple/Blue Gradient */}
-        <div className="p-5 border-b border-indigo-100 flex items-center justify-between bg-gradient-to-r from-indigo-700 via-indigo-600 to-purple-600 text-white">
+        <div className="p-4 border-b border-indigo-100 flex items-center justify-between bg-gradient-to-r from-indigo-700 via-indigo-600 to-purple-600 text-white shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-md">
               <img 
                 src={APP_LOGO_URL} 
                 alt="TkpayBD Logo" 
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjmTmkRzTlTL7cPJbnOZVeCuyoJw8wLd4-Nm1fgr_XpiBsbe6na7LozF8YRpTQDKrbAMewkhZkcyH6a5S92l-uwrs85TVXnt9V_diWaPTCLdkuuLgDjzn37aMY-Z1Fbdwjlmgd8vUPgQvR5zX9SdSoCwMKA6fnqWOPZEMgvgRzvM3b856zUdP3O4hpOpgo/s640/IMG_20261020_165816_710.jpg';
+                }}
               />
             </div>
             <div>
               <h1 className="font-extrabold text-lg tracking-wide text-white flex items-center gap-1.5 -mt-1">
                 <span>
                   <span className="text-white">T</span>
-                  <span className="text-orange-400">K</span>
+                  <span className="text-[#eb6a24]">K</span>
                   <span className="text-indigo-100 font-semibold ml-0.5">pay</span>
                   <span className="text-emerald-300 ml-0.5">BD</span>
                 </span>
@@ -97,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation Menu */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6 text-sm">
+        <div className="flex-1 overflow-y-auto py-2 px-3 space-y-4 text-sm">
           {/* Dashboard */}
           <div>
             <button
@@ -105,20 +108,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 setActiveTab('dashboard');
                 onClose();
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-semibold transition-all ${
                 activeTab === 'dashboard' 
                   ? 'bg-indigo-50 text-indigo-700 shadow-2xs border border-indigo-100' 
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <LayoutDashboard className={`w-5 h-5 ${activeTab === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <LayoutDashboard className={`w-4.5 h-4.5 ${activeTab === 'dashboard' ? 'text-indigo-600' : 'text-gray-400'}`} />
               <span>Dashboard</span>
             </button>
           </div>
 
-          {/* MANAGEMENT (Directly below Dashboard) */}
+          {/* MANAGEMENT */}
           <div>
-            <p className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Management</p>
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Management</p>
             <div className="space-y-1">
               <button
                 type="button"
@@ -129,44 +132,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClose();
                   }
                 }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-extrabold text-sm sm:text-base border transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-extrabold text-xs sm:text-sm border transition-all ${
                   isAccountActive
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200 cursor-not-allowed opacity-95'
                     : activeTab === 'inactive'
                     ? 'bg-red-100 text-red-700 border-red-300 shadow-2xs cursor-pointer'
                     : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 cursor-pointer'
                 }`}
-                title={isAccountActive ? 'Account is Active & Verified' : 'Click to apply for account verification'}
               >
                 <div className="flex items-center gap-3">
                   <span>{isAccountActive ? '🟢' : '🔴'}</span>
                   <span className="tracking-wide">{isAccountActive ? 'Active' : 'Inactive'}</span>
                 </div>
                 {isAccountActive && (
-                  <span className="text-[10px] bg-emerald-200/80 text-emerald-800 font-bold px-2 py-0.5 rounded-md">Verified</span>
+                  <span className="text-[9px] bg-emerald-200/80 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md">Verified</span>
                 )}
               </button>
 
-              {/* Admin Panel: Visible ONLY if account is Active and Approved */}
               {isPartnerAgentApproved && (
                 <button
                   onClick={() => {
                     setActiveTab('admin');
                     onClose();
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all cursor-pointer ${
                     activeTab === 'admin' 
                       ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <ShieldCheck className={`w-5 h-5 ${activeTab === 'admin' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    <ShieldCheck className={`w-4.5 h-4.5 ${activeTab === 'admin' ? 'text-indigo-600' : 'text-gray-400'}`} />
                     <span>Admin Panel</span>
                   </div>
                   {pendingCount > 0 && (
-                    <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {pendingCount} pending
+                    <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                      {pendingCount}
                     </span>
                   )}
                 </button>
@@ -176,20 +177,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* FINANCE */}
           <div>
-            <p className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Finance</p>
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Finance</p>
             <div className="space-y-1">
               <button
                 onClick={() => {
                   setActiveTab('deposit');
                   onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all ${
                   activeTab === 'deposit' 
                     ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <ArrowDownLeft className={`w-5 h-5 ${activeTab === 'deposit' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                <ArrowDownLeft className={`w-4.5 h-4.5 ${activeTab === 'deposit' ? 'text-indigo-600' : 'text-gray-400'}`} />
                 <span>Deposit</span>
               </button>
 
@@ -198,13 +199,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setActiveTab('payout');
                   onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all ${
                   activeTab === 'payout' 
                     ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <ArrowUpRight className={`w-5 h-5 ${activeTab === 'payout' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                <ArrowUpRight className={`w-4.5 h-4.5 ${activeTab === 'payout' ? 'text-indigo-600' : 'text-gray-400'}`} />
                 <span>Withdraw</span>
               </button>
             </div>
@@ -212,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* TRANSACTIONS */}
           <div>
-            <p className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Transactions</p>
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Transactions</p>
             <div className="space-y-1">
               <button
                 onClick={() => {
@@ -224,20 +225,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }
                   onClose();
                 }}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-medium transition-all cursor-pointer ${
                   activeTab === 'transactions' 
                     ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <TrendingUp className={`w-5 h-5 ${activeTab === 'transactions' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <TrendingUp className={`w-4.5 h-4.5 ${activeTab === 'transactions' ? 'text-indigo-600' : 'text-gray-400'}`} />
                   <span>Deposits</span>
                 </div>
                 {hasUnreadPending && pendingCount > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-xs animate-pulse flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                    <span>{pendingCount}</span>
+                  <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs animate-pulse">
+                    {pendingCount}
                   </span>
                 )}
               </button>
@@ -251,9 +251,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }
                   onClose();
                 }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all cursor-pointer"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all cursor-pointer"
               >
-                <TrendingDown className="w-5 h-5 text-gray-400" />
+                <TrendingDown className="w-4.5 h-4.5 text-gray-400" />
                 <span>Withdrawals</span>
               </button>
             </div>
@@ -261,20 +261,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* INTEGRATION */}
           <div>
-            <p className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Integration</p>
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Integration</p>
             <div className="space-y-1">
               <button
                 onClick={() => {
                   setActiveTab('apikeys');
                   onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all ${
                   activeTab === 'apikeys' 
                     ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <KeyRound className={`w-5 h-5 ${activeTab === 'apikeys' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                <KeyRound className={`w-4.5 h-4.5 ${activeTab === 'apikeys' ? 'text-indigo-600' : 'text-gray-400'}`} />
                 <span>API & Keys</span>
               </button>
 
@@ -283,56 +283,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setActiveTab('documentation');
                   onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all ${
                   activeTab === 'documentation' 
                     ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <FileText className={`w-5 h-5 ${activeTab === 'documentation' ? 'text-indigo-600' : 'text-gray-400'}`} />
-                <span>Docs</span>
+                <FileText className={`w-4.5 h-4.5 ${activeTab === 'documentation' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                <span>API Docs</span>
               </button>
             </div>
           </div>
 
-
           {/* ACCOUNT */}
           <div>
-            <p className="px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account</p>
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Account</p>
             <div className="space-y-1">
               <button
                 onClick={() => {
                   setActiveTab('settings');
                   onClose();
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-all ${
                   activeTab === 'settings' 
                     ? 'bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100' 
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <ShieldCheck className={`w-5 h-5 ${activeTab === 'settings' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                <ShieldCheck className={`w-4.5 h-4.5 ${activeTab === 'settings' ? 'text-indigo-600' : 'text-gray-400'}`} />
                 <span>Security</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveTab('settings');
-                  onClose();
-                }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
-              >
-                <User className="w-5 h-5 text-gray-400" />
-                <span>Profile</span>
               </button>
 
               <button
                 onClick={() => {
                   if (onLogout) onLogout();
                 }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-all"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-all"
               >
-                <LogOut className="w-5 h-5 text-red-500" />
+                <LogOut className="w-4.5 h-4.5 text-red-500" />
                 <span>Logout</span>
               </button>
             </div>

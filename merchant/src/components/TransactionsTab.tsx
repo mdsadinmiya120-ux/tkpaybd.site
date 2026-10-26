@@ -40,10 +40,10 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-12">
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
-          <h3 className="font-bold text-gray-900 text-lg">All Transactions ({filtered.length})</h3>
+    <div className="space-y-3 pb-8">
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mb-3">
+          <h3 className="font-bold text-gray-900 text-base">All Transactions ({filtered.length})</h3>
           <button
             onClick={() => {
               const csv = [
@@ -57,22 +57,22 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               a.download = 'chaopaopay_transactions.csv';
               a.click();
             }}
-            className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition border border-emerald-200 cursor-pointer"
+            className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 transition border border-emerald-200 cursor-pointer"
           >
-            <Download className="w-4 h-4" /> Export CSV
+            <Download className="w-3.5 h-3.5" /> Export CSV
           </button>
         </div>
 
         {/* Search & Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
           <div className="relative">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by ID, name, phone..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-gray-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8.5 pr-3 py-2 text-[11px] text-gray-800 focus:outline-none focus:border-emerald-500 transition font-medium"
             />
           </div>
 
@@ -80,17 +80,17 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs text-gray-800 focus:outline-none focus:border-emerald-500 transition font-medium"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2 py-2 text-[11px] text-gray-800 focus:outline-none focus:border-emerald-500 transition font-medium"
             >
               <option value="All">All Types</option>
-              <option value="Payin">Payin (Deposit)</option>
-              <option value="Payout">Payout (Withdraw)</option>
+              <option value="Payin">Payin</option>
+              <option value="Payout">Payout</option>
             </select>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs text-gray-800 focus:outline-none focus:border-emerald-500 transition font-medium"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2 py-2 text-[11px] text-gray-800 focus:outline-none focus:border-emerald-500 transition font-medium"
             >
               <option value="All">All Statuses</option>
               <option value="Success">Success</option>
@@ -104,20 +104,20 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="pb-3 font-semibold">Transaction ID</th>
-                <th className="pb-3 font-semibold">Type</th>
-                <th className="pb-3 font-semibold">Method</th>
-                <th className="pb-3 font-semibold">Amount</th>
-                <th className="pb-3 font-semibold">Date</th>
-                <th className="pb-3 font-semibold text-right">Status</th>
+              <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                <th className="pb-2 font-semibold">TX ID</th>
+                <th className="pb-2 font-semibold">Type</th>
+                <th className="pb-2 font-semibold">Method</th>
+                <th className="pb-2 font-semibold">Amount</th>
+                <th className="pb-2 font-semibold">Date</th>
+                <th className="pb-2 font-semibold text-right">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 text-xs">
+            <tbody className="divide-y divide-gray-50 text-[10px] sm:text-xs">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-400">
-                    No transactions found matching your criteria.
+                  <td colSpan={6} className="text-center py-8 text-gray-400">
+                    No transactions found.
                   </td>
                 </tr>
               ) : (
@@ -129,36 +129,32 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                       onClick={() => onSelectTransaction(tx)}
                       className="hover:bg-gray-50/80 cursor-pointer transition"
                     >
-                      <td className="py-3 font-mono font-medium text-gray-800">
+                      <td className="py-2.5 font-mono font-medium text-gray-800">
                         {tx.transactionId}
                       </td>
-                      <td className="py-3">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                      <td className="py-2.5">
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
                           isPayin ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
                         }`}>
-                          {isPayin ? <ArrowDownLeft className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
                           {tx.type}
                         </span>
                       </td>
-                      <td className="py-3 text-gray-600 font-medium">
+                      <td className="py-2.5 text-gray-600 font-medium">
                         {tx.method}
                       </td>
-                      <td className="py-3 font-bold text-gray-900">
+                      <td className="py-2.5 font-black text-gray-900">
                         {formatBDT(tx.amount)}
                       </td>
-                      <td className="py-3 text-gray-500 text-[11px]">
+                      <td className="py-2.5 text-gray-500 text-[10px]">
                         {new Date(tx.createdAt).toLocaleString()}
                       </td>
-                      <td className="py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                      <td className="py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             tx.status === 'Success' ? 'bg-emerald-100 text-emerald-800' :
                             tx.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
                             'bg-red-100 text-red-800'
                           }`}>
-                            {tx.status === 'Success' && <CheckCircle2 className="w-3 h-3" />}
-                            {tx.status === 'Pending' && <Clock className="w-3 h-3" />}
-                            {tx.status === 'Failed' && <XCircle className="w-3 h-3" />}
                             {tx.status}
                           </span>
 
@@ -169,8 +165,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                                 e.stopPropagation();
                                 onApproveDeposit(tx.transactionId);
                               }}
-                              className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[10px] font-bold shadow-2xs transition cursor-pointer"
-                              title="Approve and credit balance"
+                              className="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[9px] font-bold shadow-2xs transition cursor-pointer"
                             >
                               Approve
                             </button>

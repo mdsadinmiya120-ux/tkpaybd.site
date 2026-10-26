@@ -600,11 +600,14 @@ export default function App() {
                   src={APP_LOGO_URL} 
                   alt="Tkpaybd.site Logo" 
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjmTmkRzTlTL7cPJbnOZVeCuyoJw8wLd4-Nm1fgr_XpiBsbe6na7LozF8YRpTQDKrbAMewkhZkcyH6a5S92l-uwrs85TVXnt9V_diWaPTCLdkuuLgDjzn37aMY-Z1Fbdwjlmgd8vUPgQvR5zX9SdSoCwMKA6fnqWOPZEMgvgRzvM3b856zUdP3O4hpOpgo/s640/IMG_20261020_165816_710.jpg';
+                  }}
                 />
               </div>
               <div>
                 <h1 className="font-extrabold text-lg tracking-wide text-white">
-                  TkpayBD
+                  <span className="text-white">T</span><span className="text-[#eb6a24]">K</span><span className="text-indigo-100 font-semibold ml-0.5">pay</span><span className="text-emerald-300 ml-0.5">BD</span>
                 </h1>
                 <p className="text-[11px] text-indigo-200">Merchant Gateway</p>
               </div>
