@@ -80,28 +80,8 @@ export default function App() {
     merchant.email === 'admin@chaopaopaybd.site' || 
     merchant.email === 'sadin@chaopaopaybd.site';
 
-  // Strict Account Active Check
-  const isExplicitlyInactive = Boolean(
-    merchant.isActive === false ||
-    merchant.partnershipStatus === 'Inactive' ||
-    merchant.partnershipStatus === 'Pending Verification' ||
-    merchant.partnershipStatus === 'Rejected' ||
-    merchant.partnershipStatus === 'None' ||
-    merchant.kycStatus === 'Pending' ||
-    merchant.kycStatus === 'Unverified' ||
-    merchant.status === 'Inactive' ||
-    merchant.isApproved === false
-  );
-
-  const isAccountActive = Boolean(
-    !isExplicitlyInactive && (
-      merchant.isActive === true ||
-      merchant.partnershipStatus === 'Approved' ||
-      merchant.isPartnerAgent === true ||
-      merchant.isApproved === true ||
-      merchant.kycStatus === 'Verified'
-    )
-  );
+  // Strict Account Active Logic: Only true if explicitly set by Admin
+  const isAccountActive = Boolean(merchant.isActive === true && merchant.status !== 'Inactive');
 
   const isPartnerAgentApproved = Boolean(
     isAccountActive && (

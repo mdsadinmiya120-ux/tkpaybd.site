@@ -12,28 +12,18 @@ interface InactiveViewProps {
 
 export const InactiveView: React.FC<InactiveViewProps> = ({ 
   setActiveTab, 
-  merchantId: propMerchantId, 
+  merchantId, 
   merchant, 
   onUpdateMerchant 
 }) => {
-  const isAccountExplicitlyInactive = Boolean(
-    merchant.isActive === false ||
-    merchant.partnershipStatus === 'Inactive' ||
-    merchant.partnershipStatus === 'Rejected' ||
-    merchant.kycStatus === 'Pending' ||
-    merchant.kycStatus === 'Unverified' ||
-    merchant.status === 'Inactive' ||
-    merchant.isApproved === false
-  );
+  const isAccountActive = Boolean(merchant.isActive === true && merchant.status !== 'Inactive');
 
   const isPartnerApproved = Boolean(
-    !isAccountExplicitlyInactive &&
-    (merchant.isPartnerAgent === true || merchant.partnershipStatus === 'Approved')
+    isAccountActive && (merchant.isPartnerAgent === true || merchant.partnershipStatus === 'Approved')
   );
 
   const isGatewayActive = Boolean(
-    !isAccountExplicitlyInactive &&
-    (merchant.accountType === 'Payment Gateway Use' || isPartnerApproved)
+    isAccountActive && merchant.accountType === 'Payment Gateway Use'
   );
   const isPartnerPending = merchant.partnershipStatus === 'Pending Verification';
   const [showPartnershipForm, setShowPartnershipForm] = useState(false);
@@ -120,7 +110,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                     {gatewayView === 'BDT_SUPPORT' ? 'বিকাশ / নগদ পেমেন্ট সাপোর্ট' : 'Payment Gateway Service'}
                   </h3>
                   <p className="text-[11px] text-gray-400">
-                    {gatewayView === 'BDT_SUPPORT' ? 'টেলিগ্রাম @Chaopaopay_bd এর সাথে যোগাযোগ' : 'একাউন্ট স্ট্যাটাস ও অ্যাক্টিভেশন'}
+                    {gatewayView === 'BDT_SUPPORT' ? 'টেলিগ্রাম @tkpaybd12 এর সাথে যোগাযোগ' : 'একাউন্ট স্ট্যাটাস ও অ্যাক্টিভেশন'}
                   </p>
                 </div>
               </div>
@@ -164,7 +154,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                 {/* Action Buttons */}
                 <div className="space-y-2.5 pt-2">
                   <a
-                    href="https://t.me/Chaopaopay_bd"
+                    href="https://t.me/tkpaybd12"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold py-3.5 rounded-2xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm hover:shadow cursor-pointer no-underline"
@@ -206,10 +196,10 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                 <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-left">
                   <div>
                     <p className="text-[11px] font-bold text-gray-800">টেলিগ্রাম সাপোর্ট</p>
-                    <p className="font-mono text-xs font-bold text-blue-700">@Chaopaopay_bd</p>
+                    <p className="font-mono text-xs font-bold text-blue-700">@tkpaybd12</p>
                   </div>
                   <a
-                    href="https://t.me/Chaopaopay_bd"
+                    href="https://t.me/tkpaybd12"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 bg-[#229ED9] hover:bg-[#1E88E5] text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-2xs"
@@ -235,7 +225,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                   <div>
                     <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Telegram Official Support</p>
                     <h4 className="font-extrabold text-sm sm:text-base">বিকাশ / নগদ পেমেন্ট সাপোর্ট</h4>
-                    <p className="text-[11px] text-blue-100">টেলিগ্রাম @Chaopaopay_bd এর সাথে যোগাযোগ করে পেমেন্ট সম্পন্ন করুন</p>
+                    <p className="text-[11px] text-blue-100">টেলিগ্রাম @tkpaybd12 এর সাথে যোগাযোগ করে পেমেন্ট সম্পন্ন করুন</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
                     <MessageSquare className="w-6 h-6 text-white" />
@@ -247,10 +237,10 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[11px] font-bold text-gray-800">অফিসিয়াল টেলিগ্রাম:</p>
-                      <p className="font-mono text-sm font-extrabold text-blue-700">@Chaopaopay_bd</p>
+                      <p className="font-mono text-sm font-extrabold text-blue-700">@tkpaybd12</p>
                     </div>
                     <a
-                      href="https://t.me/Chaopaopay_bd"
+                      href="https://t.me/tkpaybd12"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 bg-[#229ED9] hover:bg-[#1E88E5] text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-sm transition"
@@ -261,7 +251,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                     </a>
                   </div>
                   <p className="text-[11px] text-gray-600">
-                    টেলিগ্রাম @Chaopaopay_bd এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। ১৩৫০ টাকা পেমেন্ট সম্পন্ন করে নিচের ফর্মে TrxID প্রদান করুন।
+                    টেলিগ্রাম @tkpaybd12 এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। ১৩৫০ টাকা পেমেন্ট সম্পন্ন করে নিচের ফর্মে TrxID প্রদান করুন।
                   </p>
                 </div>
 
@@ -384,7 +374,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                   ⏳ আপনার পার্টনারশিপ আবেদন মূল এডমিন প্যানেলে জমা হয়েছে। মূল এডমিন প্যানেল থেকে এটি ভেরিফাই ও এপ্রুভ করার সাথে সাথে আপনার ড্যাশবোর্ডে <strong>Admin Panel</strong> প্রদর্শিত হবে।
                 </p>
                 <p className="text-[11px] text-gray-500">
-                  অপেক্ষার সময় সাপোর্ট টিমের সাথে টেলিগ্রামে যোগাযোগ করতে পারেন: @Chaopaopay_bd
+                  অপেক্ষার সময় সাপোর্ট টিমের সাথে টেলিগ্রামে যোগাযোগ করতে পারেন: @tkpaybd12
                 </p>
               </div>
             ) : (
@@ -428,49 +418,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
               </button>
             )}
 
-            {/* Quick Main Admin Verification Simulator Button (for testing & owner verification) */}
-            <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
-              <span className="text-gray-400 font-medium">Main Admin Action:</span>
-              {isPartnerApproved ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const updated: MerchantProfile = {
-                      ...merchant,
-                      isPartnerAgent: false,
-                      partnershipStatus: 'None'
-                    };
-                    if (onUpdateMerchant) onUpdateMerchant(updated);
-                    try {
-                      localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
-                    } catch (e) {}
-                  }}
-                  className="text-red-600 hover:text-red-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Revoke Agent (ইনএকটিভ করুন)</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const updated: MerchantProfile = {
-                      ...merchant,
-                      isPartnerAgent: true,
-                      partnershipStatus: 'Approved'
-                    };
-                    if (onUpdateMerchant) onUpdateMerchant(updated);
-                    try {
-                      localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
-                    } catch (e) {}
-                  }}
-                  className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <ShieldCheck className="w-3 h-3 text-indigo-600" />
-                  <span>[Main Admin] Approve Partner Agent</span>
-                </button>
-              )}
-            </div>
+
           </div>
         </div>
 

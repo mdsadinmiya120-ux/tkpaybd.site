@@ -15,6 +15,7 @@ export const initialMerchant: MerchantProfile = {
   withdrawalCount: 0,
   todayWithdrawals: 0.00,
   kycStatus: 'Verified',
+  isActive: true,
   isAdminAgent: true,
   isPartnerAgent: true,
   partnershipStatus: 'Approved',
