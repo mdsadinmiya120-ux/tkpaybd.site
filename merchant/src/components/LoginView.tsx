@@ -264,13 +264,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <div className="text-center space-y-3">
             {/* Logo matching exact style: TK uppercase, T in white, K in orange #eb6a24 */}
             <div className="flex items-center justify-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-md border border-gray-100 shrink-0">
-                <img 
-                  src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjmTmkRzTlTL7cPJbnOZVeCuyoJw8wLd4-Nm1fgr_XpiBsbe6na7LozF8YRpTQDKrbAMewkhZkcyH6a5S92l-uwrs85TVXnt9V_diWaPTCLdkuuLgDjzn37aMY-Z1Fbdwjlmgd8vUPgQvR5zX9SdSoCwMKA6fnqWOPZEMgvgRzvM3b856zUdP3O4hpOpgo/s640/IMG_20261020_165816_710.jpg" 
-                  alt="TKPayBD Logo" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
               <span className="font-extrabold text-3xl tracking-tight">
                 <span className="text-gray-900">T</span>
                 <span className="text-[#eb6a24]">K</span>
@@ -375,7 +368,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href = 'https://tkpaybd.site/merchant/login.php';
+                  window.open('https://t.me/tkpaybd12', '_blank');
                 }}
                 className="text-[#6366f1] hover:text-[#5254cc] font-medium transition px-3 py-2 -mr-3 cursor-pointer"
               >
