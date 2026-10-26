@@ -62,7 +62,7 @@ const Home = () => {
            </div>
         </div>
         <Link to="/demo" className="bg-[#4f46e5] hover:bg-[#4338ca] text-white px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
-          <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">API Docs</span><span className="xs:hidden">Docs</span>
+          <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span>API Docs</span>
         </Link>
       </nav>
 

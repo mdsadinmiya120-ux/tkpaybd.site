@@ -125,27 +125,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-1">
               <button
                 type="button"
-                disabled={isAccountActive}
                 onClick={() => {
-                  if (!isAccountActive) {
-                    setActiveTab('inactive');
-                    onClose();
-                  }
+                  setActiveTab('inactive');
+                  onClose();
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-extrabold text-xs sm:text-sm border transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-extrabold text-xs sm:text-sm border transition-all cursor-pointer ${
                   isAccountActive
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 cursor-not-allowed opacity-95'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                     : activeTab === 'inactive'
-                    ? 'bg-red-100 text-red-700 border-red-300 shadow-2xs cursor-pointer'
-                    : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 cursor-pointer'
+                    ? 'bg-red-100 text-red-700 border-red-300 shadow-2xs'
+                    : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <span>{isAccountActive ? '🟢' : '🔴'}</span>
-                  <span className="tracking-wide">{isAccountActive ? 'Active' : 'Inactive'}</span>
+                  <span className="tracking-wide">
+                    {isAccountActive ? 'Partner Verify' : 'Verify Account'}
+                  </span>
                 </div>
                 {isAccountActive && (
-                  <span className="text-[9px] bg-emerald-200/80 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md">Verified</span>
+                  <span className="text-[9px] bg-emerald-200/80 text-emerald-800 font-bold px-1.5 py-0.5 rounded-md">
+                    {isPartnerAgentApproved ? 'Partner' : 'Merchant'}
+                  </span>
                 )}
               </button>
 

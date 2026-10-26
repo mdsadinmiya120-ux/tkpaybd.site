@@ -322,35 +322,51 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
       )}
       
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-red-600 to-rose-700 text-white rounded-2xl p-6 shadow-md flex items-center justify-between">
+      <div className={`rounded-2xl p-6 shadow-md flex items-center justify-between ${
+        isAccountActive 
+          ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white' 
+          : 'bg-gradient-to-r from-red-600 to-rose-700 text-white'
+      }`}>
         <div className="space-y-1">
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">Inactive Gateway Services</h2>
-          <p className="text-xs sm:text-sm text-red-100">The following advanced features and integrations are currently inactive.</p>
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+            {isAccountActive ? 'Verification & Services' : 'Inactive Gateway Services'}
+          </h2>
+          <p className="text-xs sm:text-sm opacity-90">
+            {isAccountActive 
+              ? 'Complete your partnership verification to unlock more features.' 
+              : 'The following advanced features and integrations are currently inactive.'}
+          </p>
         </div>
         <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-          <ShieldAlert className="w-7 h-7 text-white" />
+          {isAccountActive ? <ShieldCheck className="w-7 h-7 text-white" /> : <ShieldAlert className="w-7 h-7 text-white" />}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 max-w-md mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* 1. Payment Gateway Use Card */}
         <div 
           onClick={openGatewayModal}
-          className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 cursor-pointer transition space-y-3"
+          className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition space-y-3 relative overflow-hidden ${
+            isGatewayActive 
+              ? 'border-emerald-100 hover:border-emerald-200 cursor-default' 
+              : 'border-gray-100 hover:shadow-md hover:border-gray-200 cursor-pointer'
+          }`}
         >
           <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-2xs bg-emerald-50 text-emerald-600">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-2xs ${
+              isGatewayActive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+            }`}>
               <Server className="w-5 h-5" />
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px]">
-              Inactive
+            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+              isGatewayActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+            }`}>
+              {isGatewayActive ? 'Active' : 'Inactive'}
             </span>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-base font-bold text-gray-900">Payment Gateway Use</h3>
-            </div>
+            <h3 className="text-base font-bold text-gray-900 mb-1">Payment Gateway Use</h3>
             <p className="text-[11px] text-gray-500 leading-relaxed">
               Connect automated agent accounts for direct cash-in and cash-out processing with real-time callbacks.
             </p>
@@ -359,14 +375,62 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
           <div className="pt-1">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openGatewayModal();
-              }}
-              className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-2 border border-gray-200 cursor-pointer"
+              disabled={isGatewayActive}
+              className={`w-full font-bold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-2 border ${
+                isGatewayActive
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                  : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border-gray-200 cursor-pointer'
+              }`}
             >
-              <span>Configure Payment Gateway</span>
-              <ArrowRight className="w-3.5 h-3.5 text-gray-500" />
+              <span>{isGatewayActive ? 'Gateway Configured' : 'Configure Payment Gateway'}</span>
+              {!isGatewayActive && <ArrowRight className="w-3.5 h-3.5 text-gray-500" />}
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Partner Agent Verification Card */}
+        <div 
+          onClick={() => !isPartnerApproved && setShowPartnershipForm(true)}
+          className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition space-y-3 relative overflow-hidden ${
+            isPartnerApproved 
+              ? 'border-indigo-100 hover:border-indigo-200 cursor-default' 
+              : 'border-gray-100 hover:shadow-md hover:border-gray-200 cursor-pointer'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-2xs ${
+              isPartnerApproved ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
+            }`}>
+              <Users className="w-5 h-5" />
+            </div>
+            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+              isPartnerApproved ? 'bg-indigo-100 text-indigo-700' : isPartnerPending ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
+            }`}>
+              {isPartnerApproved ? 'Approved' : isPartnerPending ? 'Pending' : 'Verify Now'}
+            </span>
+          </div>
+
+          <div>
+            <h3 className="text-base font-bold text-gray-900 mb-1">Partner Agents Verify</h3>
+            <p className="text-[11px] text-gray-500 leading-relaxed">
+              Apply to become an official Partner Agent to manage sub-merchants and earn higher commissions.
+            </p>
+          </div>
+
+          <div className="pt-1">
+            <button
+              type="button"
+              disabled={isPartnerApproved || isPartnerPending}
+              className={`w-full font-bold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-2 border ${
+                isPartnerApproved
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                  : isPartnerPending
+                  ? 'bg-amber-50 text-amber-700 border-amber-100'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 cursor-pointer'
+              }`}
+            >
+              <span>{isPartnerApproved ? 'Partner Approved' : isPartnerPending ? 'Pending Verification' : 'Start Verification'}</span>
+              {!isPartnerApproved && !isPartnerPending && <ArrowRight className="w-3.5 h-3.5 text-white" />}
             </button>
           </div>
         </div>
