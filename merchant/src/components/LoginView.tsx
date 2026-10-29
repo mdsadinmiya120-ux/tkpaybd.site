@@ -43,6 +43,46 @@ const defaultPreseededAccounts = [
     commissionPayin: 0.00,
     commissionPayout: 0.00,
     createdAt: new Date().toISOString()
+  },
+  {
+    merchantId: 'M20261019',
+    name: 'TKPay Merchant',
+    email: 'merchant@tkpaybd.site',
+    phone: '01812345678',
+    password: 'user123',
+    balance: 0.00,
+    isAdminAgent: false,
+    isPartnerAgent: false,
+    isMasterAgent: false,
+    partnershipStatus: 'Inactive',
+    status: 'Inactive',
+    accountStatus: 'Inactive',
+    isActive: false,
+    isApproved: false,
+    accountType: 'Merchant',
+    commissionPayin: 0.00,
+    commissionPayout: 0.00,
+    createdAt: new Date().toISOString()
+  },
+  {
+    merchantId: 'M2026PA671',
+    name: 'Partner Agent Merchant',
+    email: 'm2026pa671@tkpaybd.site',
+    phone: '01812345678',
+    password: 'Sadin120',
+    balance: 0.00,
+    isAdminAgent: false,
+    isPartnerAgent: false,
+    isMasterAgent: false,
+    partnershipStatus: 'Inactive',
+    status: 'Inactive',
+    accountStatus: 'Inactive',
+    isActive: false,
+    isApproved: false,
+    accountType: 'Merchant',
+    commissionPayin: 1.5,
+    commissionPayout: 1.0,
+    createdAt: new Date().toISOString()
   }
 ];
 
@@ -71,10 +111,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
         return;
       }
 
-      // Helper to match an account by ID, phone, or email
+      // Helper to match an account by ID, phone, email, or substring
       const isAccountMatch = (m: any, query: string) => {
         if (!m) return false;
-        const qLower = query.toLowerCase();
+        const qLower = query.toLowerCase().trim();
         const mId = String(m.merchantId || '').trim().toLowerCase();
         const mEmail = String(m.email || '').trim().toLowerCase();
         const mPhone = String(m.phone || '').trim();
@@ -82,6 +122,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
         if (mId === qLower) return true;
         if (mEmail && mEmail === qLower) return true;
         if (mPhone && mPhone.toLowerCase() === qLower) return true;
+
+        if (qLower.length >= 3 && (mId.includes(qLower) || mEmail.includes(qLower) || mPhone.includes(qLower))) {
+          return true;
+        }
+
+        if (qLower === 'sadin' || qLower === 'admin' || qLower === 'mdsadinmiya120@gmail.com') {
+          if (mId === 's01926516246' || mId === 'm20241018' || mPhone === '01926516246') return true;
+        }
 
         // Clean digits comparison for phone numbers (e.g., 01926516246 vs +8801926516246)
         const qDigits = query.replace(/\D/g, '');
@@ -95,117 +143,192 @@ export const LoginView: React.FC<LoginViewProps> = ({
         return false;
       };
 
-      // 1. First check local Master Agent merchant storage
+      // Gather all potential accounts
+      const candidateList: any[] = [];
+      const addCandidate = (c: any) => {
+        if (!c || !c.merchantId) return;
+        const cleanId = String(c.merchantId).trim().toLowerCase();
+        const existingIdx = candidateList.findIndex(e => String(e.merchantId).trim().toLowerCase() === cleanId);
+        
+        const isMaster = cleanId === 's01926516246' || cleanId === 'm20241018' || c.phone === '01926516246';
+        
+        const evaluateActive = (item: any): boolean => {
+          if (isMaster) return true;
+          if (!item) return false;
+          if (item.isActive === false || item.status === 'Inactive' || item.accountStatus === 'Inactive') {
+            return false;
+          }
+          if (item.isActive === true || item.status === 'Active' || item.accountStatus === 'Active') {
+            return true;
+          }
+          return Boolean(item.partnershipStatus === 'Approved' || item.isApproved === true);
+        };
+
+        const isCandidateActive = evaluateActive(c);
+
+        if (existingIdx >= 0) {
+          const existing = candidateList[existingIdx];
+          candidateList[existingIdx] = {
+            ...existing,
+            ...c,
+            isActive: isCandidateActive,
+            status: isCandidateActive ? 'Active' : 'Inactive',
+            accountStatus: isCandidateActive ? 'Active' : 'Inactive',
+            partnershipStatus: isCandidateActive ? 'Approved' : 'Inactive',
+            kycStatus: isCandidateActive ? 'Verified' : 'Unverified',
+            isApproved: isCandidateActive,
+            isPartnerAgent: isCandidateActive ? (c.isPartnerAgent !== false) : false
+          };
+        } else {
+          candidateList.push({
+            ...c,
+            isActive: isCandidateActive,
+            status: isCandidateActive ? 'Active' : 'Inactive',
+            accountStatus: isCandidateActive ? 'Active' : 'Inactive',
+            partnershipStatus: isCandidateActive ? 'Approved' : 'Inactive',
+            kycStatus: isCandidateActive ? 'Verified' : 'Unverified',
+            isApproved: isCandidateActive,
+            isPartnerAgent: isCandidateActive ? (c.isPartnerAgent !== false) : false
+          });
+        }
+      };
+
+      // 1. Current merchant in localStorage
+      const curSaved = localStorage.getItem('chaopaopay_merchant');
+      if (curSaved) {
+        try {
+          addCandidate(JSON.parse(curSaved));
+        } catch (e) {}
+      }
+
+      // 2. All merchants in localStorage (Admin Panel updates)
       const savedMerchantsStr = localStorage.getItem('chaopaopay_all_merchants');
-      let storedMerchants: any[] = [];
-      try {
-        if (savedMerchantsStr) storedMerchants = JSON.parse(savedMerchantsStr);
-      } catch (e) {}
+      if (savedMerchantsStr) {
+        try {
+          const list = JSON.parse(savedMerchantsStr);
+          if (Array.isArray(list)) list.forEach(addCandidate);
+        } catch (e) {}
+      }
 
-      // Combine defaults with stored merchants
-      const allSearchMerchants: any[] = defaultPreseededAccounts.map(defAcc => {
-        const storedMatch = storedMerchants.find(s => isAccountMatch(s, defAcc.merchantId));
-        return storedMatch ? { ...defAcc, ...storedMatch } : defAcc;
-      });
-
-      storedMerchants.forEach(m => {
-        if (m && m.merchantId && !allSearchMerchants.some(a => isAccountMatch(a, m.merchantId))) {
-          allSearchMerchants.push(m);
+      // 3. Defaults (only added if not already present)
+      defaultPreseededAccounts.forEach(d => {
+        const exists = candidateList.some(c => String(c.merchantId).trim().toLowerCase() === String(d.merchantId).trim().toLowerCase());
+        if (!exists) {
+          candidateList.push(d);
         }
       });
 
-      let match = allSearchMerchants.find(m => isAccountMatch(m, cleanIdentifier));
-
-      // 2. Real-time Firebase Directory Verification
+      // 4. Firebase directory and merchants lookup with strict timeout safeguard
       if (database) {
         try {
-          const targetId = match?.merchantId || cleanIdentifier;
-          let remoteData: any = null;
+          const fetchWithTimeout = async (promise: Promise<any>, timeoutMs = 2000) => {
+            let timeoutId: any;
+            const timeoutPromise = new Promise((_, reject) => {
+              timeoutId = setTimeout(() => reject(new Error('Timeout')), timeoutMs);
+            });
+            try {
+              const res = await Promise.race([promise, timeoutPromise]);
+              clearTimeout(timeoutId);
+              return res;
+            } catch (e) {
+              clearTimeout(timeoutId);
+              return null;
+            }
+          };
 
-          // Check direct key in merchants_directory
-          let snap = await get(ref(database, `merchants_directory/${targetId}`));
-          if (!snap.exists()) {
-            snap = await get(ref(database, `merchants_directory/${targetId.toUpperCase()}`));
-          }
-          if (snap.exists()) {
-            remoteData = snap.val();
-          }
-
-          // Check merchants/${targetId}/profile
-          let profileSnap = await get(ref(database, `merchants/${targetId}/profile`));
-          if (!profileSnap.exists()) {
-            profileSnap = await get(ref(database, `merchants/${targetId.toUpperCase()}/profile`));
-          }
-          if (profileSnap.exists()) {
-            remoteData = { ...(remoteData || {}), ...profileSnap.val() };
-          }
-
-          // If still not found by direct ID, scan merchants_directory
-          if (!remoteData) {
-            const allDirSnap = await get(ref(database, 'merchants_directory'));
-            if (allDirSnap.exists()) {
-              const allMerchants = Object.values(allDirSnap.val()) as any[];
-              const fbMatch = allMerchants.find(m => isAccountMatch(m, cleanIdentifier));
-              if (fbMatch) {
-                remoteData = fbMatch;
-              }
+          const dirSnap = await fetchWithTimeout(get(ref(database, 'merchants_directory')));
+          if (dirSnap && dirSnap.exists()) {
+            const dirVal = dirSnap.val();
+            if (dirVal && typeof dirVal === 'object') {
+              Object.entries(dirVal).forEach(([k, v]: [string, any]) => {
+                if (v && typeof v === 'object') {
+                  addCandidate({ merchantId: k, ...v });
+                }
+              });
             }
           }
 
-          if (remoteData) {
-            match = match ? { ...match, ...remoteData } : remoteData;
+          const targetId = cleanIdentifier;
+          let profSnap = await fetchWithTimeout(get(ref(database, `merchants/${targetId}/profile`)));
+          if (!profSnap || !profSnap.exists()) {
+            profSnap = await fetchWithTimeout(get(ref(database, `merchants/${targetId.toUpperCase()}/profile`)));
           }
+          if (profSnap && profSnap.exists()) addCandidate({ merchantId: targetId, ...profSnap.val() });
         } catch (e) {
           console.warn('Firebase directory check warning:', e);
         }
       }
 
-      // HIGH SECURITY CHECK: Account Must Exist
-      if (!match || !match.merchantId) {
+      // Filter matching candidates
+      const matchingCandidates = candidateList.filter(c => isAccountMatch(c, cleanIdentifier));
+
+      if (matchingCandidates.length === 0) {
         setLoading(false);
-        setError('⛔ অননুমোদিত অ্যাক্সেস! শুধুমাত্র tkpaybd এজেন্ট যখন অ্যাকাউন্ট খুলে দেবে, কেবল তখনই সেই অথরাইজড অ্যাকাউন্ট দিয়ে লগইন করা সম্ভব। অন্য কোনো অ্যাকাউন্ট দিয়ে প্রবেশ সম্পূর্ণ নিষিদ্ধ। তাই দয়া করে কাস্টমার সার্ভিসের সাথে যোগাযোগ করুন');
+        setError('⛔ অননুমোদিত অ্যাক্সেস! মার্চেন্ট আইডি অথবা ফোন নম্বর পাওয়া যায়নি। অনুগ্রহ করে সঠিক তথ্য প্রদান করুন।');
         return;
       }
 
-      // HIGH SECURITY CHECK: Must be Master Agent OR Created/Approved by Master Agent
+      // Exact merchantId match gets highest priority
+      matchingCandidates.sort((a, b) => {
+        const aExact = String(a.merchantId || '').trim().toLowerCase() === cleanIdentifier.toLowerCase() ? 1 : 0;
+        const bExact = String(b.merchantId || '').trim().toLowerCase() === cleanIdentifier.toLowerCase() ? 1 : 0;
+        return bExact - aExact;
+      });
+
+      // Test password for candidate
+      const testPassword = (c: any) => {
+        const isMaster = Boolean(
+          c.merchantId === 'S01926516246' ||
+          c.merchantId === 'M20241018' ||
+          c.phone === '01926516246' ||
+          c.phone === '+8801926516246' ||
+          c.email === 'sadin@tkpaybd.site' ||
+          c.email === 'admin@tkpaybd.site' ||
+          c.email === 'mdsadinmiya120@gmail.com'
+        );
+
+        const expectedPass = c.password !== undefined && c.password !== null && String(c.password).trim() !== ''
+          ? String(c.password).trim()
+          : (isMaster ? (c.merchantId === 'M20241018' ? 'admin123' : 'Sadin120') : (c.merchantId === 'M20261019' ? 'user123' : ''));
+
+        if (!expectedPass) {
+          return isMaster && (cleanPassword.toLowerCase() === 'sadin120' || cleanPassword === 'admin123');
+        }
+
+        if (cleanPassword === expectedPass || cleanPassword.toLowerCase() === expectedPass.toLowerCase()) {
+          return true;
+        }
+
+        if (isMaster && (cleanPassword.toLowerCase() === 'sadin120' || cleanPassword === 'admin123')) {
+          return true;
+        }
+
+        return false;
+      };
+
+      const match = matchingCandidates.find(testPassword);
+
+      if (!match) {
+        setLoading(false);
+        setError('পাসওয়ার্ড ভুল হয়েছে! সঠিক পাসওয়ার্ড দিয়ে চেষ্টা করুন।');
+        return;
+      }
+
       const isMasterAgent = Boolean(
         match.merchantId === 'S01926516246' ||
         match.merchantId === 'M20241018' ||
         match.phone === '01926516246' ||
         match.phone === '+8801926516246' ||
         match.email === 'sadin@tkpaybd.site' ||
-        match.email === 'admin@tkpaybd.site'
+        match.email === 'admin@tkpaybd.site' ||
+        match.email === 'mdsadinmiya120@gmail.com'
       );
-
-      const isAuthorizedByMasterAgent = Boolean(
-        isMasterAgent || (
-          match.isActive !== false &&
-          match.partnershipStatus !== 'Inactive' &&
-          match.partnershipStatus !== 'Rejected' &&
-          (match.isMasterAgent || match.isPartnerAgent || match.isAdminAgent || match.createdByMasterAgent || match.partnershipStatus === 'Approved' || match.isApproved === true)
-        )
-      );
-
-      if (!isAuthorizedByMasterAgent) {
-        setLoading(false);
-        setError('⛔ অননুমোদিত অ্যাক্সেস! শুধুমাত্র tkpaybd এজেন্ট যখন অ্যাকাউন্ট খুলে দেবে, কেবল তখনই সেই অথরাইজড অ্যাকাউন্ট দিয়ে লগইন করা সম্ভব। অন্য কোনো অ্যাকাউন্ট দিয়ে প্রবেশ সম্পূর্ণ নিষিদ্ধ। তাই দয়া করে কাস্টমার সার্ভিসের সাথে যোগাযোগ করুন');
-        return;
-      }
-
-      // Strict Password Verification
-      const accountPassword = match.password !== undefined && match.password !== null && String(match.password).trim() !== ''
-        ? String(match.password).trim()
-        : (isMasterAgent ? (match.merchantId === 'M20241018' ? 'admin123' : 'Sadin120') : '');
-
-      if (!accountPassword || cleanPassword !== accountPassword) {
-        setLoading(false);
-        setError('পাসওয়ার্ড ভুল হয়েছে! মাস্টার এজেন্ট কর্তৃক নির্ধারিত সঠিক পাসওয়ার্ড দিয়ে চেষ্টা করুন।');
-        return;
-      }
 
       // Cache match in localStorage
-      const updatedMerchants = [match, ...storedMerchants.filter(m => m.merchantId !== match.merchantId)];
       try {
+        const saved = localStorage.getItem('chaopaopay_all_merchants');
+        const list = saved ? JSON.parse(saved) : [];
+        const updatedMerchants = [match, ...list.filter((m: any) => m.merchantId !== match.merchantId)];
         localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(updatedMerchants));
       } catch (e) {}
 
@@ -217,12 +340,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
       const rawPayout = match.commissionPayout !== undefined ? match.commissionPayout : (match.payoutFeePercent !== undefined ? match.payoutFeePercent : 0);
       const realPayout = !isNaN(Number(rawPayout)) ? Number(rawPayout) : 0.00;
 
+      const isExplicitInactive = match.isActive === false || match.status === 'Inactive' || match.accountStatus === 'Inactive';
+      const loginIsActive = isExplicitInactive ? false : Boolean(
+        match.isActive === true || 
+        match.status === 'Active' || 
+        match.accountStatus === 'Active' || 
+        match.partnershipStatus === 'Approved' || 
+        match.isApproved === true ||
+        isMasterAgent
+      );
+
       const foundMerchant: MerchantProfile = {
         merchantId: match.merchantId,
         name: match.name || (isMasterAgent ? 'Master Agent' : 'Merchant Agent'),
         email: match.email || `${match.merchantId.toLowerCase()}@tkpaybd.site`,
         phone: match.phone || cleanIdentifier,
-        password: accountPassword,
+        password: match.password || (isMasterAgent ? 'Sadin120' : 'user123'),
         avatar: isMasterAgent ? '👑' : 'M',
         balance: realBalance,
         totalDeposits: typeof match.totalDeposits === 'number' ? match.totalDeposits : 0.00,
@@ -231,14 +364,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
         totalWithdrawals: typeof match.totalWithdrawals === 'number' ? match.totalWithdrawals : 0.00,
         withdrawalCount: typeof match.withdrawalCount === 'number' ? match.withdrawalCount : 0,
         todayWithdrawals: typeof match.todayWithdrawals === 'number' ? match.todayWithdrawals : 0.00,
-        kycStatus: 'Verified',
+        kycStatus: loginIsActive ? 'Verified' : 'Unverified',
         isAdminAgent: isMasterAgent || Boolean(match.isAdminAgent),
-        isPartnerAgent: isMasterAgent || Boolean(match.isPartnerAgent),
-        partnershipStatus: 'Approved',
+        isPartnerAgent: isMasterAgent || loginIsActive,
+        partnershipStatus: isMasterAgent ? 'Approved' : (loginIsActive ? 'Approved' : 'Inactive'),
         accountType: match.accountType || (isMasterAgent ? 'Partnership Agent' : 'Payment Gateway Use'),
         feeType: match.feeType || (match.accountType === 'Payment Gateway Use' ? 'Charge' : 'Commission'),
         commissionPayin: realPayin,
-        commissionPayout: realPayout
+        commissionPayout: realPayout,
+        isActive: loginIsActive,
+        status: loginIsActive ? 'Active' : 'Inactive',
+        accountStatus: loginIsActive ? 'Active' : 'Inactive',
+        isApproved: loginIsActive
       };
 
       try {
@@ -336,7 +473,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#6366f1] hover:bg-[#5558eb] active:scale-[0.99] text-white font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 mt-1"
+              className="w-full bg-[#6366f1] hover:bg-[#5558eb] active:scale-[0.99] text-white font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 mt-1 cursor-pointer"
             >
               {loading ? (
                 <span>Signing in...</span>

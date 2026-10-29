@@ -32,6 +32,8 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     return `৳${amount.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BDT`;
   };
 
+  const isCommissionActive = (merchant.isCommissionActive === false || merchant.commissionStatus === 'Inactive' || merchant.commissionStatus === 'Deactive') ? false : true;
+
   // Filter transactions to only show those belonging to the current merchant
   const merchantTransactions = transactions.filter(t => t.merchantId === merchant.merchantId);
 
@@ -109,11 +111,18 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </span>
             </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-gray-50">
-             <p className="text-[9px] font-bold text-red-600 flex items-center gap-1">
+          <div className="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between">
+             <p className={`text-[9px] font-bold flex items-center gap-1 ${
+               isCommissionActive ? 'text-indigo-600' : 'text-gray-400'
+             }`}>
                 <Percent className="w-2.5 h-2.5" />
-                {`Payin: ${Number(merchant.commissionPayin ?? 0).toFixed(2)}% ${merchant.feeType || 'Fee'}`}
+                <span>{isCommissionActive ? `Payin: ${Number(merchant.commissionPayin ?? 0).toFixed(2)}% ${merchant.feeType || 'Fee'}` : 'Payin Fee: 0.00% (Deactive)'}</span>
              </p>
+             <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
+               isCommissionActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
+             }`}>
+               {isCommissionActive ? 'Active' : 'Deactive'}
+             </span>
           </div>
         </div>
 
@@ -146,11 +155,18 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </span>
             </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-gray-50">
-             <p className="text-[9px] font-bold text-red-600 flex items-center gap-1">
+          <div className="mt-2 pt-2 border-t border-gray-50 flex items-center justify-between">
+             <p className={`text-[9px] font-bold flex items-center gap-1 ${
+               isCommissionActive ? 'text-indigo-600' : 'text-gray-400'
+             }`}>
                 <Percent className="w-2.5 h-2.5" />
-                {`Payout: ${Number(merchant.commissionPayout ?? 0).toFixed(2)}% ${merchant.feeType || 'Fee'}`}
+                <span>{isCommissionActive ? `Payout: ${Number(merchant.commissionPayout ?? 0).toFixed(2)}% ${merchant.feeType || 'Fee'}` : 'Payout Fee: 0.00% (Deactive)'}</span>
              </p>
+             <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
+               isCommissionActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
+             }`}>
+               {isCommissionActive ? 'Active' : 'Deactive'}
+             </span>
           </div>
         </div>
       </div>

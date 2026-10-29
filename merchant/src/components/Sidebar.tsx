@@ -101,6 +101,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation Menu */}
         <div className="flex-1 overflow-y-auto py-2 px-3 space-y-4 text-sm">
+          {/* Home / Landing Page Link */}
+
           {/* Dashboard */}
           <div>
             <button
@@ -126,15 +128,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setActiveTab('inactive');
-                  onClose();
+                  if (!isAccountActive) {
+                    setActiveTab('inactive');
+                    onClose();
+                  }
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-extrabold text-xs sm:text-sm border transition-all cursor-pointer ${
+                disabled={isAccountActive}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-extrabold text-xs sm:text-sm border transition-all ${
                   isAccountActive
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 cursor-default shadow-xs'
                     : activeTab === 'inactive'
-                    ? 'bg-red-100 text-red-700 border-red-300 shadow-2xs'
-                    : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
+                    ? 'bg-red-100 text-red-700 border-red-300 shadow-2xs cursor-pointer'
+                    : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 cursor-pointer'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -323,7 +328,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => {
                   if (onLogout) onLogout();
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-all"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-all cursor-pointer"
               >
                 <LogOut className="w-4.5 h-4.5 text-red-500" />
                 <span>Logout</span>
@@ -332,11 +337,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Sidebar Bottom Available Balance Card */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-4 text-white shadow-md">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200 mb-1">Available Balance</p>
-            <h3 className="text-xl font-extrabold tracking-tight">{formatBDT(balance)}</h3>
+        {/* Available Balance */}
+        <div className="p-3 border-t border-gray-100 bg-gray-50/50 shrink-0">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-3.5 text-white shadow-md">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200 mb-0.5">Available Balance</p>
+            <h3 className="text-lg font-extrabold tracking-tight">{formatBDT(balance)}</h3>
           </div>
         </div>
       </div>

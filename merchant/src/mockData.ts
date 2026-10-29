@@ -15,14 +15,49 @@ export const initialMerchant: MerchantProfile = {
   withdrawalCount: 0,
   todayWithdrawals: 0.00,
   kycStatus: 'Unverified',
-  isActive: false, // Inactive by default so user sees Inactive status!
+  isActive: false,
+  status: 'Inactive',
+  accountStatus: 'Inactive',
+  isApproved: false,
   isAdminAgent: false,
   isPartnerAgent: false,
   partnershipStatus: 'Inactive',
   accountType: 'Merchant',
-  feeType: 'Commission',
-  commissionPayin: 0.00,
-  commissionPayout: 0.00,
+  feeType: 'Charge',
+  isCommissionActive: true,
+  commissionStatus: 'Active',
+  commissionPayin: 1.5,
+  commissionPayout: 1.0,
+};
+
+export const partnerAgentMerchant: MerchantProfile = {
+  merchantId: 'M2026PA671',
+  name: 'Partner Agent Merchant',
+  email: 'm2026pa671@tkpaybd.site',
+  phone: '01812345678',
+  password: 'Sadin120',
+  avatar: 'P',
+  balance: 0.00,
+  totalDeposits: 0.00,
+  depositCount: 0,
+  todayDeposits: 0.00,
+  totalWithdrawals: 0.00,
+  withdrawalCount: 0,
+  todayWithdrawals: 0.00,
+  kycStatus: 'Unverified',
+  isActive: false,
+  status: 'Inactive',
+  accountStatus: 'Inactive',
+  isApproved: false,
+  isAdminAgent: false,
+  isPartnerAgent: false,
+  partnershipStatus: 'Inactive',
+  accountType: 'Merchant',
+  feeType: 'Charge',
+  isCommissionActive: true,
+  commissionStatus: 'Active',
+  commissionPayin: 1.5,
+  commissionPayout: 1.0,
 };
 
 export const masterAdminMerchant: MerchantProfile = {
@@ -41,18 +76,23 @@ export const masterAdminMerchant: MerchantProfile = {
   todayWithdrawals: 0.00,
   kycStatus: 'Verified',
   isActive: true,
+  status: 'Active',
+  accountStatus: 'Active',
   isAdminAgent: true,
   isPartnerAgent: true,
   partnershipStatus: 'Approved',
   accountType: 'Partnership Agent',
   feeType: 'Commission',
+  isCommissionActive: true,
+  commissionStatus: 'Active',
   commissionPayin: 0.00,
   commissionPayout: 0.00,
 };
 
 export const defaultMerchantsList: MerchantProfile[] = [
   masterAdminMerchant,
-  initialMerchant
+  initialMerchant,
+  partnerAgentMerchant
 ];
 
 export const initialTransactions: Transaction[] = [];

@@ -17,21 +17,23 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
   merchant, 
   onUpdateMerchant 
 }) => {
-  const isAccountActive = Boolean(
+  const isMasterAdmin = merchant.merchantId === 'S01926516246' || merchant.merchantId === 'M20241018';
+
+  const isAccountActive = isMasterAdmin || Boolean(
     merchant.isActive === true && 
-    merchant.status === 'Active' && 
+    (merchant.status === 'Active' || merchant.accountStatus === 'Active') && 
+    merchant.partnershipStatus === 'Approved' &&
     merchant.isApproved === true
   );
 
-  const isPartnerApproved = Boolean(
-    isAccountActive && 
-    (merchant.isPartnerAgent === true || merchant.partnershipStatus === 'Approved')
+  const isPartnerApproved = isMasterAdmin || Boolean(
+    merchant.partnershipStatus === 'Approved' && merchant.isApproved === true && merchant.isActive === true
   );
 
-  const isGatewayActive = Boolean(
-    isAccountActive && 
-    merchant.accountType === 'Payment Gateway Use'
+  const isGatewayActive = isMasterAdmin || Boolean(
+    isAccountActive && (merchant.accountType === 'Payment Gateway Use' || merchant.accountType === 'Partnership Agent')
   );
+
   const isPartnerPending = merchant.partnershipStatus === 'Pending Verification';
   const [showPartnershipForm, setShowPartnershipForm] = useState(false);
   const [showGatewayModal, setShowGatewayModal] = useState(false);
@@ -95,7 +97,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
       {/* Partnership Request Modal */}
       {showPartnershipForm && (
         <PartnershipForm 
-          merchantId={merchantId} 
+          merchantId={merchant.merchantId || merchantId || 'UNKNOWN'} 
           onClose={() => setShowPartnershipForm(false)} 
           onSubmit={(data) => {
             const targetMerchantId = merchant.merchantId || merchantId || 'UNKNOWN';
@@ -109,7 +111,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
               whatsapp: data.whatsapp || '',
               nidNumber: data.nidNumber || '',
               trxId: (data.bdtTrxId || data.txHash || '').trim().toUpperCase(),
-              amount: data.paymentMethod === 'USDT' ? (Number(data.usdtAmount) || 26) : 1350,
+              amount: data.paymentMethod === 'USDT' ? (Number(data.usdtAmount) || 5) : 1350,
               currency: data.paymentMethod === 'USDT' ? 'USDT' : 'BDT',
               paymentMethod: data.paymentMethod || 'bKash/Nagad',
               status: 'Pending',
@@ -128,7 +130,6 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
             try {
               localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
             } catch (e) {}
-            setShowPartnershipForm(false);
           }} 
         />
       )}
@@ -180,31 +181,49 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
 
             {/* Modal Body */}
             {gatewayView === 'STATUS' ? (
-              /* SCREEN 1: STATUS & REQUIREMENT (Matching user screenshot) */
+              /* SCREEN 1: STATUS & REQUIREMENT */
               <div className="p-6 space-y-4 text-center overflow-y-auto">
-                {/* Box 1: Service Status "এক্টিভ না" */}
-                <div className="w-full py-6 px-4 rounded-3xl border border-rose-200/90 bg-rose-50/40 flex flex-col items-center justify-center space-y-1.5 shadow-2xs">
-                  <div className="inline-block px-4 py-1 rounded-full bg-rose-100/80 text-rose-800 font-bold text-xs tracking-wide">
-                    সার্ভিস স্ট্যাটাস
+                {/* Box 1: Service Status */}
+                <div className={`w-full py-6 px-4 rounded-3xl border flex flex-col items-center justify-center space-y-1.5 shadow-2xs ${
+                  isAccountActive ? 'border-emerald-200/90 bg-emerald-50/40' : 'border-rose-200/90 bg-rose-50/40'
+                }`}>
+                  <div className={`inline-block px-4 py-1 rounded-full font-bold text-xs tracking-wide ${
+                    isAccountActive ? 'bg-emerald-100/90 text-emerald-800' : 'bg-rose-100/80 text-rose-800'
+                  }`}>
+                    সার্ভিস স্ট্যাটাস: {isAccountActive ? 'সক্রিয় (Active)' : 'নিষ্ক্রিয় (Inactive)'}
                   </div>
-                  <h2 className="text-3xl sm:text-4xl font-black text-red-600 tracking-wide pt-1 pb-0.5">
-                    এক্টিভ না
+                  <h2 className={`text-3xl sm:text-4xl font-black tracking-wide pt-1 pb-0.5 ${
+                    isAccountActive ? 'text-emerald-600' : 'text-red-600'
+                  }`}>
+                    {isAccountActive ? 'এক্টিভ' : 'এক্টিভ না'}
                   </h2>
-                  <p className="text-xs sm:text-sm text-rose-500 font-medium">
-                    স্ট্যাটাস নির্দেশনা নিচে দেওয়া হলো
+                  <p className={`text-xs sm:text-sm font-medium ${isAccountActive ? 'text-emerald-700' : 'text-rose-500'}`}>
+                    {isAccountActive ? 'আপনার পেমেন্ট গেটওয়ে সেবাটি সফলভাবে চালু আছে' : 'স্ট্যাটাস নির্দেশনা নিচে দেওয়া হলো'}
                   </p>
                 </div>
 
-                {/* Box 2: Activation Requirement Notice */}
-                <div className="bg-amber-50/60 border border-amber-200/90 rounded-2xl p-4 text-left space-y-2 shadow-2xs">
-                  <div className="flex items-center gap-2 text-amber-800 font-bold text-xs sm:text-sm">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>অ্যাক্টিভেশন রিকোয়ারমেন্ট:</span>
+                {/* Box 2: Activation Requirement / Status Notice */}
+                {isAccountActive ? (
+                  <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-2xl p-4 text-left space-y-2 shadow-2xs">
+                    <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs sm:text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>অ্যাক্টিভেশন স্ট্যাটাস:</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-800 leading-relaxed font-normal">
+                      আপনার অ্যাকাউন্টটি মাস্টার এডমিন থেকে <strong className="text-emerald-600 font-black text-sm sm:text-base">এক্টিভ করা হয়েছে</strong>। সমস্ত পেমেন্ট সার্ভিস ও গেটওয়ে এখন পুরোপুরি সক্রিয়।
+                    </p>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-800 leading-relaxed font-normal">
-                    এটা এক্টিভ করতে <strong className="text-red-600 font-black text-sm sm:text-base">১৩৫০ টাকা</strong> পেমেন্ট করতে হবে, দয়া করে সাপোর্ট টিমের সাথে কথা বলুন।
-                  </p>
-                </div>
+                ) : (
+                  <div className="bg-amber-50/60 border border-amber-200/90 rounded-2xl p-4 text-left space-y-2 shadow-2xs">
+                    <div className="flex items-center gap-2 text-amber-800 font-bold text-xs sm:text-sm">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>অ্যাক্টিভেশন রিকোয়ারমেন্ট:</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-800 leading-relaxed font-normal">
+                      এটা এক্টিভ করতে <strong className="text-red-600 font-black text-sm sm:text-base">১৩৫০ টাকা</strong> পেমেন্ট করতে হবে, দয়া করে সাপোর্ট টিমের সাথে কথা বলুন।
+                    </p>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="space-y-2.5 pt-2">
@@ -218,13 +237,15 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                     <span>সাপোর্ট টিমের সাথে কথা বলুন</span>
                   </a>
 
-                  <button
-                    type="button"
-                    onClick={() => setGatewayView('BDT_SUPPORT')}
-                    className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-emerald-200 cursor-pointer"
-                  >
-                    <span>বিকাশ/নগদ TrxID সাবমিট করুন</span>
-                  </button>
+                  {!isAccountActive && (
+                    <button
+                      type="button"
+                      onClick={() => setGatewayView('BDT_SUPPORT')}
+                      className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-emerald-200 cursor-pointer"
+                    >
+                      <span>বিকাশ/নগদ TrxID সাবমিট করুন</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -371,116 +392,154 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
       )}
       
       {/* Top Banner */}
-      <div className={`rounded-2xl p-6 shadow-md flex items-center justify-between ${
+      <div className={`rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden flex items-center justify-between ${
         isAccountActive 
-          ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white' 
-          : 'bg-gradient-to-r from-red-600 to-rose-700 text-white'
+          ? 'bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-800 text-white' 
+          : 'bg-gradient-to-r from-red-600 via-rose-600 to-pink-700 text-white'
       }`}>
-        <div className="space-y-1">
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+        <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="space-y-1.5 relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-semibold text-white/90 mb-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Security & Verification Center</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
             {isAccountActive ? 'Verification & Services' : 'Inactive Gateway Services'}
           </h2>
-          <p className="text-xs sm:text-sm opacity-90">
+          <p className="text-xs sm:text-sm text-white/90 max-w-xl font-medium">
             {isAccountActive 
-              ? 'Complete your partnership verification to unlock more features.' 
-              : 'The following advanced features and integrations are currently inactive.'}
+              ? 'Complete your partnership verification to unlock higher transaction volume caps and advanced features.' 
+              : 'The following advanced features and integrations are currently inactive. Complete verification to activate.'}
           </p>
         </div>
-        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-          {isAccountActive ? <ShieldCheck className="w-7 h-7 text-white" /> : <ShieldAlert className="w-7 h-7 text-white" />}
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center shrink-0 shadow-lg relative z-10">
+          {isAccountActive ? <ShieldCheck className="w-8 h-8 text-white" /> : <ShieldAlert className="w-8 h-8 text-white animate-bounce" />}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* 1. Payment Gateway Use Card */}
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 1. Partner Agents Verification Card (Top) */}
         <div 
-          onClick={openGatewayModal}
-          className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition space-y-3 relative overflow-hidden ${
-            isGatewayActive 
-              ? 'border-emerald-100 hover:border-emerald-200 cursor-default' 
-              : 'border-gray-100 hover:shadow-md hover:border-gray-200 cursor-pointer'
+          onClick={() => !isAccountActive && !isPartnerApproved && !isPartnerPending && setShowPartnershipForm(true)}
+          className={`bg-white rounded-3xl shadow-sm border transition-all duration-300 relative overflow-hidden group flex flex-col justify-between ${
+            isPartnerApproved 
+              ? 'border-indigo-200/80 bg-gradient-to-b from-indigo-50/40 to-white shadow-md' 
+              : isPartnerPending
+              ? 'border-amber-200 bg-amber-50/20 cursor-default'
+              : isAccountActive
+              ? 'border-gray-200/80 opacity-70 cursor-not-allowed bg-gray-50/50'
+              : 'border-gray-200/90 hover:shadow-xl hover:border-indigo-300 cursor-pointer hover:-translate-y-0.5'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-2xs ${
-              isGatewayActive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-            }`}>
-              <Server className="w-5 h-5" />
+          {/* Partner Banner Image */}
+          <div className="relative h-40 w-full overflow-hidden bg-slate-100">
+            <img 
+              src="/partner_agent_banner.jpg" 
+              alt="Partner Agents" 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-900/20 to-transparent"></div>
+            <div className="absolute top-3 right-3">
+              <span className={`px-3 py-1 rounded-full font-bold text-xs tracking-wide shadow-md backdrop-blur-md ${
+                isPartnerApproved ? 'bg-indigo-600/90 text-white' : isPartnerPending ? 'bg-amber-500/90 text-white' : 'bg-white/90 text-gray-900'
+              }`}>
+                {isPartnerApproved ? 'Approved ✓' : isPartnerPending ? 'রিভিউ চলছে ⏳' : 'Verify Now'}
+              </span>
             </div>
-            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-              isGatewayActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-            }`}>
-              {isGatewayActive ? 'Active' : 'Inactive'}
-            </span>
+            <div className="absolute bottom-3 left-4 right-4 flex items-center gap-2">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-md backdrop-blur-md ${
+                isPartnerApproved ? 'bg-indigo-600 text-white' : 'bg-white/90 text-indigo-700'
+              }`}>
+                <Users className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-black text-white drop-shadow-sm tracking-tight">
+                Partner Agents
+              </h3>
+            </div>
           </div>
 
-          <div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">Payment Gateway Use</h3>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Connect automated agent accounts for direct cash-in and cash-out processing with real-time callbacks.
+          <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-normal">
+              আপনার সঠিক তথ্য সাবমিট করে অফিসিয়াল পার্টনার হিসেবে একাউন্ট এক্টিভ করুন।
             </p>
-          </div>
 
-          <div className="pt-1">
-            <button
-              type="button"
-              disabled={isGatewayActive}
-              className={`w-full font-bold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-2 border ${
-                isGatewayActive
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                  : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border-gray-200 cursor-pointer'
-              }`}
-            >
-              <span>{isGatewayActive ? 'Gateway Configured' : 'Configure Payment Gateway'}</span>
-              {!isGatewayActive && <ArrowRight className="w-3.5 h-3.5 text-gray-500" />}
-            </button>
+            <div className="pt-2">
+              <button
+                type="button"
+                disabled={isAccountActive || isPartnerApproved || isPartnerPending}
+                className={`w-full font-bold py-3.5 px-4 rounded-2xl text-xs transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
+                  isPartnerApproved
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 cursor-default'
+                    : isPartnerPending
+                    ? 'bg-amber-50 text-amber-800 border border-amber-200 cursor-default'
+                    : isAccountActive
+                    ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 cursor-pointer'
+                }`}
+              >
+                <span>{isPartnerApproved ? 'Partner Approved' : isPartnerPending ? 'আবেদন রিভিউ করা হচ্ছে' : isAccountActive ? 'Account Active' : 'Submit Partner Verification'}</span>
+                {!isPartnerApproved && !isPartnerPending && !isAccountActive && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 2. Partner Agent Verification Card */}
+        {/* 2. Payment Gateway Use Card (Bottom) */}
         <div 
-          onClick={() => !isPartnerApproved && setShowPartnershipForm(true)}
-          className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition space-y-3 relative overflow-hidden ${
-            isPartnerApproved 
-              ? 'border-indigo-100 hover:border-indigo-200 cursor-default' 
-              : 'border-gray-100 hover:shadow-md hover:border-gray-200 cursor-pointer'
+          onClick={openGatewayModal}
+          className={`bg-white rounded-3xl shadow-sm border transition-all duration-300 relative overflow-hidden group flex flex-col justify-between ${
+            isGatewayActive 
+              ? 'border-emerald-200/80 bg-gradient-to-b from-emerald-50/40 to-white shadow-md cursor-default' 
+              : 'border-gray-200/90 hover:shadow-xl hover:border-emerald-300 cursor-pointer hover:-translate-y-0.5'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-2xs ${
-              isPartnerApproved ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
-            }`}>
-              <Users className="w-5 h-5" />
+          {/* Gateway Banner Image */}
+          <div className="relative h-40 w-full overflow-hidden bg-slate-900">
+            <img 
+              src="/payment_gateway_banner.jpg" 
+              alt="Payment Gateway Use" 
+              className="w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/30 to-transparent"></div>
+            <div className="absolute top-3 right-3">
+              <span className={`px-3 py-1 rounded-full font-bold text-xs tracking-wide shadow-md backdrop-blur-md ${
+                isGatewayActive ? 'bg-emerald-600/90 text-white' : 'bg-rose-600/90 text-white'
+              }`}>
+                {isGatewayActive ? 'Active ✓' : 'Inactive ✕'}
+              </span>
             </div>
-            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-              isPartnerApproved ? 'bg-indigo-100 text-indigo-700' : isPartnerPending ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
-            }`}>
-              {isPartnerApproved ? 'Approved' : isPartnerPending ? 'Pending' : 'Verify Now'}
-            </span>
+            <div className="absolute bottom-3 left-4 right-4 flex items-center gap-2">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-md backdrop-blur-md ${
+                isGatewayActive ? 'bg-emerald-600 text-white' : 'bg-white/90 text-rose-600'
+              }`}>
+                <Server className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-black text-white drop-shadow-sm tracking-tight">
+                Payment Gateway Use
+              </h3>
+            </div>
           </div>
 
-          <div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">Partner Agents Verify</h3>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Apply to become an official Partner Agent to manage sub-merchants and earn higher commissions.
+          <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-normal">
+              Connect automated agent accounts for direct cash-in and cash-out processing with real-time callbacks.
             </p>
-          </div>
 
-          <div className="pt-1">
-            <button
-              type="button"
-              disabled={isPartnerApproved || isPartnerPending}
-              className={`w-full font-bold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-2 border ${
-                isPartnerApproved
-                  ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                  : isPartnerPending
-                  ? 'bg-amber-50 text-amber-700 border-amber-100'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 cursor-pointer'
-              }`}
-            >
-              <span>{isPartnerApproved ? 'Partner Approved' : isPartnerPending ? 'Pending Verification' : 'Start Verification'}</span>
-              {!isPartnerApproved && !isPartnerPending && <ArrowRight className="w-3.5 h-3.5 text-white" />}
-            </button>
+            <div className="pt-2">
+              <button
+                type="button"
+                disabled={isGatewayActive}
+                className={`w-full font-bold py-3.5 px-4 rounded-2xl text-xs transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
+                  isGatewayActive
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-default'
+                    : 'bg-gray-900 hover:bg-black text-white shadow-gray-200 cursor-pointer'
+                }`}
+              >
+                <span>{isGatewayActive ? 'Gateway Configured' : 'Configure Payment Gateway'}</span>
+                {!isGatewayActive && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>

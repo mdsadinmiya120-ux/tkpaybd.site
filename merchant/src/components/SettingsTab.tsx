@@ -68,28 +68,37 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ merchant, onUpdateMerc
         </div>
 
         {/* Live Account Rates & Balance Overview */}
-        <div className="grid grid-cols-3 gap-2 p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 mb-6 text-center text-xs">
-          <div>
-            <p className="text-[10px] font-bold text-gray-500 uppercase">Available Balance</p>
-            <p className="font-extrabold text-emerald-700 text-sm mt-0.5">
-              ৳{Number(merchant.balance || 0).toLocaleString('en-BD', { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <div className="border-x border-indigo-100">
-            <p className="text-[10px] font-bold text-gray-500 uppercase">Payin (Deposit)</p>
-            <p className="font-extrabold text-red-600 text-sm mt-0.5">
-              {Number(merchant.commissionPayin ?? 0).toFixed(2)}%
-            </p>
-            <span className="text-[9px] text-gray-500">{merchant.feeType || 'Commission'}</span>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-gray-500 uppercase">Payout (Withdraw)</p>
-            <p className="font-extrabold text-red-600 text-sm mt-0.5">
-              {Number(merchant.commissionPayout ?? 0).toFixed(2)}%
-            </p>
-            <span className="text-[9px] text-gray-500">{merchant.feeType || 'Commission'}</span>
-          </div>
-        </div>
+        {(() => {
+          const isCommAct = (merchant.isCommissionActive === false || merchant.commissionStatus === 'Inactive' || merchant.commissionStatus === 'Deactive') ? false : true;
+          return (
+            <div className="grid grid-cols-3 gap-2 p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 mb-6 text-center text-xs">
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 uppercase">Available Balance</p>
+                <p className="font-extrabold text-emerald-700 text-sm mt-0.5">
+                  ৳{Number(merchant.balance || 0).toLocaleString('en-BD', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="border-x border-indigo-100">
+                <p className="text-[10px] font-bold text-gray-500 uppercase">Payin ({isCommAct ? 'Active' : 'Deactive'})</p>
+                <p className={`font-extrabold text-sm mt-0.5 ${isCommAct ? 'text-indigo-700' : 'text-gray-400'}`}>
+                  {isCommAct ? `${Number(merchant.commissionPayin ?? 0).toFixed(2)}%` : '0.00%'}
+                </p>
+                <span className={`text-[9px] font-bold ${isCommAct ? 'text-indigo-600' : 'text-red-600'}`}>
+                  {isCommAct ? (merchant.feeType || 'Commission') : 'নিষ্ক্রিয়'}
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 uppercase">Payout ({isCommAct ? 'Active' : 'Deactive'})</p>
+                <p className={`font-extrabold text-sm mt-0.5 ${isCommAct ? 'text-indigo-700' : 'text-gray-400'}`}>
+                  {isCommAct ? `${Number(merchant.commissionPayout ?? 0).toFixed(2)}%` : '0.00%'}
+                </p>
+                <span className={`text-[9px] font-bold ${isCommAct ? 'text-indigo-600' : 'text-red-600'}`}>
+                  {isCommAct ? (merchant.feeType || 'Commission') : 'নিষ্ক্রিয়'}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>

@@ -15,36 +15,32 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Root route - redirect to merchant login or serve index
-  app.get('/', (req, res, next) => {
+  // Merchant Portal, Demo Store, and Main App entry points
+  const handleSpaRoute = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (isProduction && fs.existsSync(distIndex)) {
       res.sendFile(distIndex);
     } else {
       next();
     }
-  });
+  };
 
-  // Health check endpoint for Cloud Run probes
-  app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-  });
-
-  // Route for the merchant login path - serve app
-  app.get('/merchant/login.php', (req, res, next) => {
-    if (isProduction && fs.existsSync(distIndex)) {
-      res.sendFile(distIndex);
-    } else {
-      // In dev, let it fall through to Vite middleware
-      next();
-    }
-  });
+  app.get('/', handleSpaRoute);
+  app.get('/health', (req, res) => res.status(200).send('OK'));
+  app.get('/merchant/*', handleSpaRoute);
+  app.get('/merchant/login.php', handleSpaRoute);
+  app.get('/demo', handleSpaRoute);
 
   if (isProduction && fs.existsSync(distIndex)) {
     console.log('Serving production build from:', distPath);
     app.use(express.static(distPath));
-    // Fallback for other routes? User didn't specify. Let's keep it minimal.
+    
+    // Fallback for all other routes to distIndex for SPA routing
     app.get('*', (req, res) => {
-      res.status(404).send('Not Found');
+      if (fs.existsSync(distIndex)) {
+        res.sendFile(distIndex);
+      } else {
+        res.status(404).send('Not Found');
+      }
     });
   } else {
     // Dev server using Vite

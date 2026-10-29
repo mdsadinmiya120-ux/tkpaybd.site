@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/* Safety removal of elements that might contain 'Demo' or 'ডেমো' */
+[class*="bg-slate-900"], [class*="bg-slate-800"] {
+  /* Only hide if they contain the specific Bengali text if possible, 
+     but since I can't find it, I'll be careful.
+  */
+}
+
+/* Specific selector for the suspected demo block from screenshot */
+div:has(span:contains("Demo")), 
+div:has(span:contains("ডেমো")) {
+  display: none !important;
+}

@@ -70,98 +70,220 @@ export default function App() {
 
   const pendingDepositsCount = transactions.filter(t => t.type === 'Payin' && t.status === 'Pending').length;
 
-  const isSuperAdmin = 
-    merchant.merchantId === 'M20241018' || 
-    merchant.merchantId === 'S01926516246' || 
-    merchant.phone === '01926516246' ||
-    merchant.phone === '+8801926516246' ||
-    merchant.email === 'admin@tkpaybd.site' || 
-    merchant.email === 'sadin@tkpaybd.site' ||
-    merchant.email === 'admin@chaopaopaybd.site' || 
-    merchant.email === 'sadin@chaopaopaybd.site';
-
-  // Strict Account Active Logic: Only true if explicitly set by Admin
-  const isAccountActive = Boolean(merchant.isActive === true && merchant.status !== 'Inactive');
-
-  const isPartnerAgentApproved = Boolean(
-    isAccountActive && (
-      isSuperAdmin || merchant.isPartnerAgent === true || merchant.partnershipStatus === 'Approved'
-    )
+  const isSuperAdmin = Boolean(
+    (merchant.merchantId && ['M20241018', 'S01926516246'].includes(merchant.merchantId.trim().toUpperCase())) || 
+    (merchant.phone && ['01926516246', '+8801926516246'].includes(merchant.phone.trim())) ||
+    (merchant.email && [
+      'admin@tkpaybd.site', 
+      'sadin@tkpaybd.site', 
+      'admin@chaopaopaybd.site', 
+      'sadin@chaopaopaybd.site',
+      'mdsadinmiya120@gmail.com'
+    ].includes(merchant.email.trim().toLowerCase()))
   );
 
-  // Guard: Unapproved or inactive merchants cannot view admin tab
-  useEffect(() => {
-    if (activeTab === 'admin' && !isPartnerAgentApproved) {
-      setActiveTab('dashboard');
+  // Centralized evaluation function to guarantee Master Admin Panel authority
+  const evaluateAccountActive = (data: any, isMaster: boolean = false): boolean => {
+    if (isMaster) return true;
+    if (!data) return false;
+    
+    // Explicit inactive check takes absolute precedence
+    if (data.isActive === false || data.status === 'Inactive' || data.accountStatus === 'Inactive' || data.partnershipStatus === 'Rejected') {
+      return false;
     }
-  }, [activeTab, isPartnerAgentApproved]);
+    
+    // Only active if explicitly approved & activated by Master Admin Panel
+    return Boolean(
+      data.isActive === true && 
+      data.isApproved === true && 
+      data.partnershipStatus === 'Approved' && 
+      (data.status === 'Active' || data.accountStatus === 'Active')
+    );
+  };
 
-  // Sync profile from chaopaopay_all_merchants whenever another tab or Admin Panel updates storage
+  // Strict Account Active Logic
+  const isAccountActive = evaluateAccountActive(merchant, isSuperAdmin);
+
+  const isPartnerAgentApproved = Boolean(
+    isSuperAdmin || isAccountActive
+  );
+
+    // Guard: Only redirect if superadmin restriction applies, never trap in inactive during normal operations
+    useEffect(() => {
+      if (activeTab === 'admin' && !isPartnerAgentApproved && !isSuperAdmin) {
+        setActiveTab('dashboard');
+      }
+      // New Guard: If account is active, don't allow staying in inactive tab
+      if (isAccountActive && (activeTab === 'inactive' || activeTab === 'verification')) {
+        setActiveTab('dashboard');
+      }
+    }, [activeTab, isPartnerAgentApproved, isSuperAdmin, isAccountActive]);
+
+  // Sync profile from chaopaopay_merchant and chaopaopay_all_merchants whenever another tab or Admin Panel updates storage
   useEffect(() => {
-    const handleStorageChange = () => {
+    const handleStorageChange = (e?: any) => {
       try {
-        const savedAll = localStorage.getItem('chaopaopay_all_merchants');
-        if (savedAll) {
-          const list = JSON.parse(savedAll);
-          if (Array.isArray(list)) {
-            const currentId = merchant.merchantId.trim().toLowerCase();
-            const match = list.find((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === currentId);
-            
-            if (match) {
-              setMerchant(prev => {
-                const pPayin = match.commissionPayin !== undefined ? Number(match.commissionPayin) : prev.commissionPayin;
-                const pPayout = match.commissionPayout !== undefined ? Number(match.commissionPayout) : prev.commissionPayout;
-                const pBal = match.balance !== undefined ? Number(match.balance) : prev.balance;
-                const pAccType = match.accountType || prev.accountType;
-                const pFeeType = match.feeType || (pAccType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
-                const pPartner = match.isPartnerAgent !== undefined ? Boolean(match.isPartnerAgent) : prev.isPartnerAgent;
-                const pStatus = match.partnershipStatus || match.status || prev.partnershipStatus;
-                const pActive = match.isActive !== undefined ? Boolean(match.isActive) : prev.isActive;
-                const pKyc = match.kycStatus || match.accountStatus || prev.kycStatus;
-                const pApproved = match.isApproved !== undefined ? Boolean(match.isApproved) : prev.isApproved;
+        const currentId = merchant.merchantId ? merchant.merchantId.trim().toLowerCase() : '';
+        
+        // Check if event has detail (merchantUpdated CustomEvent)
+        const detail = e?.detail;
+        if (detail && detail.merchantId && currentId && detail.merchantId.trim().toLowerCase() === currentId) {
+          const isMaster = Boolean(
+            currentId === 's01926516246' ||
+            currentId === 'm20241018' ||
+            detail.phone === '01926516246'
+          );
+          const pActive = evaluateAccountActive(detail, isMaster);
 
-                if (
-                  prev.balance === pBal &&
-                  prev.commissionPayin === pPayin &&
-                  prev.commissionPayout === pPayout &&
-                  prev.accountType === pAccType &&
-                  prev.feeType === pFeeType &&
-                  prev.isPartnerAgent === pPartner &&
-                  prev.partnershipStatus === pStatus &&
-                  prev.isActive === pActive &&
-                  prev.kycStatus === pKyc &&
-                  prev.isApproved === pApproved
-                ) {
-                  return prev;
-                }
-                
-                const updated: MerchantProfile = {
-                  ...prev,
-                  balance: pBal,
-                  commissionPayin: pPayin,
-                  commissionPayout: pPayout,
-                  accountType: pAccType,
-                  feeType: pFeeType,
-                  isPartnerAgent: pPartner,
-                  partnershipStatus: pStatus,
-                  isActive: pActive,
-                  kycStatus: pKyc,
-                  isApproved: pApproved,
-                  totalDeposits: typeof match.totalDeposits === 'number' ? match.totalDeposits : (prev.totalDeposits || 0),
-                  totalWithdrawals: typeof match.totalWithdrawals === 'number' ? match.totalWithdrawals : (prev.totalWithdrawals || 0),
-                  todayDeposits: typeof match.todayDeposits === 'number' ? match.todayDeposits : (prev.todayDeposits || 0),
-                  todayWithdrawals: typeof match.todayWithdrawals === 'number' ? match.todayWithdrawals : (prev.todayWithdrawals || 0),
-                  depositCount: typeof match.depositCount === 'number' ? match.depositCount : (prev.depositCount || 0),
-                  withdrawalCount: typeof match.withdrawalCount === 'number' ? match.withdrawalCount : (prev.withdrawalCount || 0)
-                };
-                
-                try {
-                  localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
-                } catch (e) {}
-                
-                return updated;
-              });
+          setMerchant(prev => {
+            const updated: MerchantProfile = {
+              ...prev,
+              ...detail,
+              isActive: pActive,
+              status: pActive ? 'Active' : 'Inactive',
+              accountStatus: pActive ? 'Active' : 'Inactive',
+              partnershipStatus: pActive ? 'Approved' : 'Inactive',
+              kycStatus: pActive ? 'Verified' : 'Unverified',
+              isApproved: pActive,
+              isPartnerAgent: pActive ? (detail.isPartnerAgent !== false) : false
+            };
+            try {
+              localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
+            } catch (err) {}
+            return updated;
+          });
+          return;
+        }
+
+        // 1. Check chaopaopay_all_merchants FIRST (Authoritative source from Admin Panel)
+        const savedAll = localStorage.getItem('chaopaopay_all_merchants');
+        if (savedAll && currentId) {
+          try {
+            const list = JSON.parse(savedAll);
+            if (Array.isArray(list)) {
+              const match = list.find((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === currentId);
+              if (match) {
+                setMerchant(prev => {
+                  const pPayin = match.commissionPayin !== undefined ? Number(match.commissionPayin) : prev.commissionPayin;
+                  const pPayout = match.commissionPayout !== undefined ? Number(match.commissionPayout) : prev.commissionPayout;
+                  const pBal = match.balance !== undefined ? Number(match.balance) : prev.balance;
+                  const pAccType = match.accountType || prev.accountType;
+                  const pFeeType = match.feeType || (pAccType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
+                  const pCommActive = (match.isCommissionActive === false || match.commissionStatus === 'Inactive' || match.commissionStatus === 'Deactive') ? false : true;
+                  const pCommStatus = pCommActive ? 'Active' : 'Inactive';
+                  
+                  const isMaster = Boolean(
+                    currentId === 's01926516246' ||
+                    currentId === 'm20241018' ||
+                    match.phone === '01926516246'
+                  );
+
+                  const pActive = evaluateAccountActive(match, isMaster);
+
+                  const pStatus = pActive ? 'Active' : 'Inactive';
+                  const pPartner = pActive ? (match.isPartnerAgent !== false) : false;
+                  const pStatusPartner = pActive ? 'Approved' : 'Inactive';
+                  const pKyc = pActive ? 'Verified' : 'Unverified';
+                  const pApproved = pActive;
+
+                  if (
+                    prev.balance === pBal &&
+                    prev.commissionPayin === pPayin &&
+                    prev.commissionPayout === pPayout &&
+                    prev.isCommissionActive === pCommActive &&
+                    prev.commissionStatus === pCommStatus &&
+                    prev.accountType === pAccType &&
+                    prev.feeType === pFeeType &&
+                    prev.isPartnerAgent === pPartner &&
+                    prev.partnershipStatus === pStatusPartner &&
+                    prev.isActive === pActive &&
+                    prev.status === pStatus &&
+                    prev.accountStatus === pStatus &&
+                    prev.kycStatus === pKyc &&
+                    prev.isApproved === pApproved
+                  ) {
+                    return prev;
+                  }
+                  
+                  const updated: MerchantProfile = {
+                    ...prev,
+                    ...match,
+                    balance: pBal,
+                    commissionPayin: pPayin,
+                    commissionPayout: pPayout,
+                    isCommissionActive: pCommActive,
+                    commissionStatus: pCommStatus,
+                    accountType: pAccType,
+                    feeType: pFeeType,
+                    isPartnerAgent: pPartner,
+                    partnershipStatus: pStatusPartner,
+                    isActive: pActive,
+                    status: pStatus,
+                    accountStatus: pStatus,
+                    kycStatus: pKyc,
+                    isApproved: pApproved,
+                    totalDeposits: typeof match.totalDeposits === 'number' ? match.totalDeposits : (prev.totalDeposits || 0),
+                    totalWithdrawals: typeof match.totalWithdrawals === 'number' ? match.totalWithdrawals : (prev.totalWithdrawals || 0),
+                    todayDeposits: typeof match.todayDeposits === 'number' ? match.todayDeposits : (prev.todayDeposits || 0),
+                    todayWithdrawals: typeof match.todayWithdrawals === 'number' ? match.todayWithdrawals : (prev.todayWithdrawals || 0),
+                    depositCount: typeof match.depositCount === 'number' ? match.depositCount : (prev.depositCount || 0),
+                    withdrawalCount: typeof match.withdrawalCount === 'number' ? match.withdrawalCount : (prev.withdrawalCount || 0)
+                  };
+                  
+                  try {
+                    localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
+                  } catch (e) {}
+                  
+                  return updated;
+                });
+                return;
+              }
             }
+          } catch (e) {}
+        }
+
+        // 2. Fallback to chaopaopay_merchant
+        const curSaved = localStorage.getItem('chaopaopay_merchant');
+        if (curSaved && currentId) {
+          const curM = JSON.parse(curSaved);
+          if (curM && curM.merchantId && curM.merchantId.trim().toLowerCase() === currentId) {
+            const isMaster = Boolean(
+              currentId === 's01926516246' ||
+              currentId === 'm20241018' ||
+              curM.phone === '01926516246'
+            );
+            const isAct = evaluateAccountActive(curM, isMaster);
+            const isCommAct = (curM.isCommissionActive === false || curM.commissionStatus === 'Inactive' || curM.commissionStatus === 'Deactive') ? false : true;
+            setMerchant(prev => {
+              const updatedStatus = isAct ? 'Active' : 'Inactive';
+              const updatedPartnerStatus = isAct ? 'Approved' : 'Inactive';
+              const updatedCommStatus = isCommAct ? 'Active' : 'Inactive';
+              if (
+                prev.isActive === isAct &&
+                prev.status === updatedStatus &&
+                prev.accountStatus === updatedStatus &&
+                prev.partnershipStatus === updatedPartnerStatus &&
+                prev.isCommissionActive === isCommAct &&
+                prev.commissionStatus === updatedCommStatus &&
+                prev.balance === curM.balance &&
+                prev.commissionPayin === curM.commissionPayin &&
+                prev.commissionPayout === curM.commissionPayout
+              ) {
+                return prev;
+              }
+              return {
+                ...prev,
+                ...curM,
+                isActive: isAct,
+                status: updatedStatus,
+                accountStatus: updatedStatus,
+                isApproved: isAct,
+                partnershipStatus: updatedPartnerStatus,
+                isCommissionActive: isCommAct,
+                commissionStatus: updatedCommStatus
+              };
+            });
+            return;
           }
         }
       } catch (e) {
@@ -183,6 +305,8 @@ export default function App() {
   // Real-time synchronization for Merchant Profile from Firebase Realtime Database
   useEffect(() => {
     if (!database || !merchant.merchantId) return;
+    const currentId = merchant.merchantId.trim().toLowerCase();
+    
     try {
       const applyRemoteUpdate = (val: any) => {
         if (!val) return;
@@ -201,40 +325,58 @@ export default function App() {
 
           const newAccType = val.accountType || prev.accountType;
           const pFeeType = val.feeType || (newAccType === 'Payment Gateway Use' ? 'Charge' : 'Commission');
-          const newPartner = val.isPartnerAgent !== undefined ? Boolean(val.isPartnerAgent) : prev.isPartnerAgent;
-          const newStatus = val.partnershipStatus || val.status || prev.partnershipStatus;
-          const newKyc = val.kycStatus || val.accountStatus || prev.kycStatus;
-          const newApproved = val.isApproved !== undefined ? Boolean(val.isApproved) : prev.isApproved;
+          const isCommAct = (val.isCommissionActive === false || val.commissionStatus === 'Inactive' || val.commissionStatus === 'Deactive') ? false : true;
+          const commStatus = isCommAct ? 'Active' : 'Inactive';
           
-          const newIsActive = val.isActive !== undefined 
-            ? Boolean(val.isActive) 
-            : (newStatus === 'Inactive' || newKyc === 'Unverified' || newKyc === 'Pending' || val.status === 'Inactive' || newApproved === false ? false : prev.isActive);
+          const isMaster = Boolean(
+            currentId === 's01926516246' ||
+            currentId === 'm20241018' ||
+            prev.phone === '01926516246' ||
+            prev.email === 'admin@tkpaybd.site' ||
+            prev.email === 'sadin@tkpaybd.site'
+          );
+
+          const newIsActive = evaluateAccountActive(val, isMaster);
+
+          const newStatus = val.status || (newIsActive ? 'Active' : 'Inactive');
+          const newPartner = val.isPartnerAgent !== undefined ? val.isPartnerAgent : (newIsActive ? (val.isPartnerAgent !== false) : false);
+          const updatedPartnerStatus = val.partnershipStatus || (newIsActive ? 'Approved' : 'Inactive');
+          const newKyc = val.kycStatus || (newIsActive ? 'Verified' : 'Unverified');
+          const newApproved = val.isApproved !== undefined ? val.isApproved : newIsActive;
 
           if (
             prev.balance === newBal &&
             prev.commissionPayin === newPayin &&
             prev.commissionPayout === newPayout &&
-            prev.accountType === newAccType &&
-            prev.feeType === pFeeType &&
-            prev.isPartnerAgent === newPartner &&
-            prev.partnershipStatus === newStatus &&
+            prev.isCommissionActive === isCommAct &&
+            prev.commissionStatus === commStatus &&
             prev.isActive === newIsActive &&
+            prev.status === newStatus &&
+            prev.accountStatus === newStatus &&
+            prev.partnershipStatus === updatedPartnerStatus &&
             prev.kycStatus === newKyc &&
-            prev.isApproved === newApproved
+            prev.isApproved === newApproved &&
+            prev.accountType === newAccType &&
+            prev.feeType === pFeeType
           ) {
             return prev;
           }
 
           const updated: MerchantProfile = {
             ...prev,
+            ...val,
             balance: newBal,
             commissionPayin: newPayin,
             commissionPayout: newPayout,
+            isCommissionActive: isCommAct,
+            commissionStatus: commStatus,
             accountType: newAccType,
             feeType: pFeeType,
             isPartnerAgent: newPartner,
-            partnershipStatus: newStatus,
+            partnershipStatus: updatedPartnerStatus,
             isActive: newIsActive,
+            status: newStatus,
+            accountStatus: newStatus,
             kycStatus: newKyc,
             isApproved: newApproved,
             totalDeposits: typeof val.totalDeposits === 'number' ? val.totalDeposits : (prev.totalDeposits || 0),
@@ -253,22 +395,58 @@ export default function App() {
         });
       };
 
-      const unsubProfile = onValue(ref(database, `merchants/${merchant.merchantId}/profile`), snap => {
+      const unsubProfile1 = onValue(ref(database, `merchants/${merchant.merchantId}/profile`), snap => {
         if (snap.exists()) applyRemoteUpdate(snap.val());
       });
 
-      const unsubDir = onValue(ref(database, `merchants_directory/${merchant.merchantId}`), snap => {
+      const unsubProfile2 = onValue(ref(database, `merchants/${currentId}/profile`), snap => {
         if (snap.exists()) applyRemoteUpdate(snap.val());
       });
 
-      const unsubRoot = onValue(ref(database, `merchants/${merchant.merchantId}`), snap => {
+      const unsubDir1 = onValue(ref(database, `merchants_directory/${merchant.merchantId}`), snap => {
         if (snap.exists()) applyRemoteUpdate(snap.val());
+      });
+
+      const unsubDir2 = onValue(ref(database, `merchants_directory/${currentId}`), snap => {
+        if (snap.exists()) applyRemoteUpdate(snap.val());
+      });
+
+      const unsubComm1 = onValue(ref(database, `merchants/${merchant.merchantId}/commission`), snap => {
+        if (snap.exists()) applyRemoteUpdate(snap.val());
+      });
+
+      const unsubComm2 = onValue(ref(database, `merchants/${currentId}/commission`), snap => {
+        if (snap.exists()) applyRemoteUpdate(snap.val());
+      });
+
+      // Also listen to full directory to catch any admin panel toggle instantly
+      const unsubAllDir = onValue(ref(database, `merchants_directory`), snap => {
+        if (snap.exists()) {
+          const all = snap.val();
+          if (all && typeof all === 'object') {
+            const entries = Object.entries(all);
+            for (const [key, val] of entries) {
+              const item = val as any;
+              if (!item) continue;
+              const matchesId = key.trim().toLowerCase() === currentId || 
+                (item.merchantId && item.merchantId.trim().toLowerCase() === currentId);
+              if (matchesId) {
+                applyRemoteUpdate({ merchantId: key, ...item });
+                break;
+              }
+            }
+          }
+        }
       });
 
       return () => {
-        unsubProfile();
-        unsubDir();
-        unsubRoot();
+        unsubProfile1();
+        unsubProfile2();
+        unsubDir1();
+        unsubDir2();
+        unsubComm1();
+        unsubComm2();
+        unsubAllDir();
       };
     } catch (e) {
       console.warn('Profile real-time sync error:', e);
@@ -392,27 +570,39 @@ export default function App() {
           let list = JSON.parse(savedAll);
           if (Array.isArray(list)) {
             const mIdx = list.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.toLowerCase());
+            const mData = mIdx >= 0 ? list[mIdx] : merchant;
+            const updatedM = {
+              ...merchant,
+              ...mData,
+              balance: (mData.balance || 0) + approvedAmount,
+              totalDeposits: (mData.totalDeposits || 0) + approvedAmount,
+              depositCount: (mData.depositCount || 0) + 1,
+              todayDeposits: (mData.todayDeposits || 0) + approvedAmount,
+              isActive: true,
+              status: 'Active',
+              isApproved: true,
+              partnershipStatus: 'Approved',
+              isPartnerAgent: true,
+            };
             if (mIdx >= 0) {
-              const updatedM = {
-                ...list[mIdx],
-                balance: (list[mIdx].balance || 0) + approvedAmount,
-                totalDeposits: (list[mIdx].totalDeposits || 0) + approvedAmount,
-                depositCount: (list[mIdx].depositCount || 0) + 1,
-                todayDeposits: (list[mIdx].todayDeposits || 0) + approvedAmount,
-              };
               list[mIdx] = updatedM;
-              localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
-              
-              // If the target merchant is the current logged-in user, update state
-              if (targetMerchantId?.toLowerCase() === merchant.merchantId.toLowerCase()) {
-                setMerchant(updatedM);
-              }
-              
-              // Sync updated merchant to Firebase
-              if (database) {
-                set(ref(database, `merchants_directory/${targetMerchantId}`), updatedM).catch(() => {});
-                set(ref(database, `merchants/${targetMerchantId}/profile`), updatedM).catch(() => {});
-              }
+            } else {
+              list.push(updatedM);
+            }
+            localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
+            
+            // If the target merchant is the current logged-in user, update state & storage
+            if (targetMerchantId?.toLowerCase() === merchant.merchantId.toLowerCase()) {
+              setMerchant(updatedM);
+              try {
+                localStorage.setItem('chaopaopay_merchant', JSON.stringify(updatedM));
+              } catch (e) {}
+            }
+            
+            // Sync updated merchant to Firebase
+            if (database && targetMerchantId) {
+              set(ref(database, `merchants_directory/${targetMerchantId}`), updatedM).catch(() => {});
+              set(ref(database, `merchants/${targetMerchantId}/profile`), updatedM).catch(() => {});
             }
           }
         }
@@ -482,24 +672,36 @@ export default function App() {
           let list = JSON.parse(savedAll);
           if (Array.isArray(list)) {
             const mIdx = list.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.toLowerCase());
+            const mData = mIdx >= 0 ? list[mIdx] : merchant;
+            const updatedM = {
+              ...merchant,
+              ...mData,
+              balance: (mData.balance || 0) + rejectedAmount,
+              totalWithdrawals: (mData.totalWithdrawals || 0) - rejectedAmount,
+              todayWithdrawals: (mData.todayWithdrawals || 0) - rejectedAmount,
+              isActive: true,
+              status: 'Active',
+              isApproved: true,
+              partnershipStatus: 'Approved',
+              isPartnerAgent: true,
+            };
             if (mIdx >= 0) {
-              const updatedM = {
-                ...list[mIdx],
-                balance: (list[mIdx].balance || 0) + rejectedAmount,
-                totalWithdrawals: (list[mIdx].totalWithdrawals || 0) - rejectedAmount,
-                todayWithdrawals: (list[mIdx].todayWithdrawals || 0) - rejectedAmount,
-              };
               list[mIdx] = updatedM;
-              localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
-              
-              if (targetMerchantId?.toLowerCase() === merchant.merchantId.toLowerCase()) {
-                setMerchant(updatedM);
-              }
-              
-              if (database) {
-                set(ref(database, `merchants_directory/${targetMerchantId}`), updatedM).catch(() => {});
-                set(ref(database, `merchants/${targetMerchantId}/profile`), updatedM).catch(() => {});
-              }
+            } else {
+              list.push(updatedM);
+            }
+            localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
+            
+            if (targetMerchantId?.toLowerCase() === merchant.merchantId.toLowerCase()) {
+              setMerchant(updatedM);
+              try {
+                localStorage.setItem('chaopaopay_merchant', JSON.stringify(updatedM));
+              } catch (e) {}
+            }
+            
+            if (database && targetMerchantId) {
+              set(ref(database, `merchants_directory/${targetMerchantId}`), updatedM).catch(() => {});
+              set(ref(database, `merchants/${targetMerchantId}/profile`), updatedM).catch(() => {});
             }
           }
         }
@@ -532,6 +734,30 @@ export default function App() {
     }
     setTransactionTypeFilter(filter);
     setActiveTab('transactions');
+  };
+
+  const handleSwitchMerchant = (targetMerchant: MerchantProfile) => {
+    const isMaster = Boolean(
+      (targetMerchant.merchantId && ['M20241018', 'S01926516246'].includes(targetMerchant.merchantId.trim().toUpperCase())) ||
+      (targetMerchant.phone && ['01926516246', '+8801926516246'].includes(targetMerchant.phone.trim())) ||
+      (targetMerchant.email && ['admin@tkpaybd.site', 'sadin@tkpaybd.site', 'mdsadinmiya120@gmail.com'].includes(targetMerchant.email.trim().toLowerCase()))
+    );
+    const pActive = evaluateAccountActive(targetMerchant, isMaster);
+    const updated: MerchantProfile = {
+      ...targetMerchant,
+      isActive: pActive,
+      status: pActive ? 'Active' : 'Inactive',
+      accountStatus: pActive ? 'Active' : 'Inactive',
+      partnershipStatus: pActive ? 'Approved' : 'Inactive',
+      kycStatus: pActive ? 'Verified' : 'Unverified',
+      isApproved: pActive,
+      isPartnerAgent: pActive ? (targetMerchant.isPartnerAgent !== false) : false
+    };
+    setMerchant(updated);
+    try {
+      localStorage.setItem('chaopaopay_merchant', JSON.stringify(updated));
+    } catch (e) {}
+    setActiveTab(pActive ? 'dashboard' : 'inactive');
   };
 
   if (checkoutData) {
@@ -634,16 +860,19 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveTab('inactive');
+                    if (!isAccountActive) {
+                      setActiveTab('inactive');
+                    }
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-extrabold text-sm sm:text-base border transition-all cursor-pointer ${
+                  disabled={isAccountActive}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl font-extrabold text-sm sm:text-base border transition-all ${
                     isAccountActive
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 cursor-default shadow-xs'
                       : activeTab === 'inactive'
-                      ? 'bg-red-100 text-red-700 border-red-300 shadow-2xs'
-                      : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200'
+                      ? 'bg-red-100 text-red-700 border-red-300 shadow-2xs cursor-pointer'
+                      : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 cursor-pointer'
                   }`}
-                  title={isAccountActive ? 'Apply for Partner Agent' : 'Click to apply for account verification'}
+                  title={isAccountActive ? 'Your account is verified and active' : 'Click to apply for account verification'}
                 >
                   <div className="flex items-center gap-3">
                     <span>{isAccountActive ? '🟢' : '🔴'}</span>
@@ -806,8 +1035,9 @@ export default function App() {
             </div>
           </div>
 
-          {/* Sidebar Bottom Available Balance Card */}
+          {/* Balance in Desktop Sidebar */}
           <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-4 text-white shadow-md">
               <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-200 mb-1">Available Balance</p>
               <h3 className="text-xl font-extrabold tracking-tight">৳{merchant.balance.toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BDT</h3>
@@ -824,6 +1054,9 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onUpdateMerchant={setMerchant}
+          onSwitchMerchant={handleSwitchMerchant}
+          isAccountActive={isAccountActive}
+          isCommissionActive={merchant.isCommissionActive !== false && merchant.commissionStatus !== 'Inactive' && merchant.commissionStatus !== 'Deactive'}
         />
 
         <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-20">
@@ -856,6 +1089,7 @@ export default function App() {
               onRejectPayout={handleAdminRejectPayout}
               onUpdateSiteSettings={handleUpdateSiteSettings}
               onUpdateMerchant={setMerchant}
+              onSwitchMerchant={handleSwitchMerchant}
             />
           )}
 
@@ -863,7 +1097,7 @@ export default function App() {
             <DepositModal 
               merchantId={merchant.merchantId}
               currentBalance={merchant.balance}
-              commissionPayin={Number(merchant.commissionPayin ?? 0)}
+              commissionPayin={(merchant.isCommissionActive !== false && merchant.commissionStatus !== 'Inactive' && merchant.commissionStatus !== 'Deactive') ? Number(merchant.commissionPayin ?? 0) : 0}
               transactions={transactions.filter(t => t.merchantId === merchant.merchantId)}
               onAddTransaction={handleAddTransaction}
               onSuccessReturn={() => setActiveTab('dashboard')}
@@ -876,7 +1110,7 @@ export default function App() {
             <PayoutModal 
               merchantId={merchant.merchantId}
               currentBalance={merchant.balance}
-              commissionPayout={Number(merchant.commissionPayout ?? 0)}
+              commissionPayout={(merchant.isCommissionActive !== false && merchant.commissionStatus !== 'Inactive' && merchant.commissionStatus !== 'Deactive') ? Number(merchant.commissionPayout ?? 0) : 0}
               transactions={transactions.filter(t => t.merchantId === merchant.merchantId)}
               onAddTransaction={handleAddTransaction}
               onSuccessReturn={() => setActiveTab('dashboard')}

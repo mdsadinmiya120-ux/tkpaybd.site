@@ -37,8 +37,14 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   const [amount, setAmount] = useState('500');
   const [method, setMethod] = useState<'bKash' | 'Nagad' | 'Rocket'>('bKash');
   const [generateLink, setGenerateLink] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [depositNumbers, setDepositNumbers] = useState<{ method: 'bKash' | 'Nagad' | 'Rocket'; number: string; limit: number }[]>(() => {
+    try {
+      const saved = localStorage.getItem('chaopaopay_deposit_numbers_list');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) { return []; }
+  });
   const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
   const [successResult, setSuccessResult] = useState<{ id: string; amount: number; link?: string } | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Copy, Check, ArrowLeft, ShieldCheck, QrCode, AlertCircle, MessageSquare, ExternalLink } from 'lucide-react';
-
+import { VerificationRequest } from '../types';
+import { saveVerificationRequest } from '../utils/verificationService';
 
 interface PartnershipFormProps {
   onClose: () => void;
@@ -27,7 +28,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
   const [copied, setCopied] = useState(false);
   const [txHash, setTxHash] = useState('');
   const [senderWallet, setSenderWallet] = useState('');
-  const [usdtAmount, setUsdtAmount] = useState('26');
+  const [usdtAmount, setUsdtAmount] = useState('5');
   
   // BDT Form State
   const [bdtPhone, setBdtPhone] = useState('');
@@ -37,9 +38,35 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleFirstStepSubmit = (e: React.FormEvent) => {
+  const handleFirstStepSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(2);
+    setIsSubmitting(true);
+
+    try {
+      const targetId = merchantId || 'UNKNOWN';
+      const nidRequest: VerificationRequest = {
+        id: 'VR-NID-' + targetId + '-' + Date.now(),
+        merchantId: targetId,
+        merchantName: formData.name || 'Merchant User',
+        type: 'PARTNER_AGENT',
+        title: 'পার্টনার এনআইডি কার্ড ভেরিফিকেশন আবেদন',
+        phone: formData.phone,
+        whatsapp: formData.whatsapp,
+        nidNumber: formData.nidNumber,
+        amount: 1350,
+        currency: 'BDT',
+        paymentMethod: 'NID Submitted (Pending Payment)',
+        status: 'Pending',
+        submittedAt: new Date().toISOString()
+      };
+
+      await saveVerificationRequest(nidRequest);
+      setStep(2);
+    } catch (err) {
+      console.error('Error in step 1:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCopyAddress = () => {
@@ -50,22 +77,34 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (paymentMethod === 'USDT' && (parseFloat(usdtAmount) < 26 || isNaN(parseFloat(usdtAmount)))) {
-      alert('সর্বনিম্ন ডিপোজিট ২৬ ডলার।');
+    if (paymentMethod === 'USDT' && (parseFloat(usdtAmount) < 5 || isNaN(parseFloat(usdtAmount)))) {
+      alert('সর্বনিম্ন ডিপোজিট ৫ ডলার।');
       return;
     }
     setIsSubmitting(true);
 
-    // Simulation: In a real app, this would be an API call
-    console.log('Partnership submission:', {
-      name: formData.name,
-      nidNumber: formData.nidNumber,
-      phone: formData.phone,
+    const targetId = merchantId || 'UNKNOWN';
+    
+    // Create & dispatch complete verification request containing ALL details (NID + Payment) to Master Admin Panel
+    const completeRequest: VerificationRequest = {
+      id: 'VR-PA-' + targetId + '-' + Date.now(),
+      merchantId: targetId,
+      merchantName: formData.name || 'Merchant User',
+      type: 'PARTNER_AGENT',
+      title: 'Partner Agent Verification & Activation Request',
+      phone: formData.phone || bdtPhone,
       whatsapp: formData.whatsapp,
-      merchantId,
-      paymentMethod,
+      nidNumber: formData.nidNumber,
+      trxId: (bdtTrxId || txHash || '').trim().toUpperCase(),
+      amount: paymentMethod === 'USDT' ? (Number(usdtAmount) || 5) : 1350,
+      currency: paymentMethod === 'USDT' ? 'USDT' : 'BDT',
+      paymentMethod: paymentMethod === 'USDT' ? 'USDT (TRC20)' : 'bKash/Nagad',
+      status: 'Pending',
       submittedAt: new Date().toISOString()
-    });
+    };
+
+    console.log('Dispatching complete verification request:', completeRequest);
+    await saveVerificationRequest(completeRequest);
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -76,7 +115,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
           nidNumber: formData.nidNumber,
           phone: formData.phone,
           whatsapp: formData.whatsapp,
-          merchantId,
+          merchantId: targetId,
           paymentMethod,
           bdtPhone,
           bdtTrxId,
@@ -108,16 +147,16 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
             )}
             <h3 className="font-bold text-gray-900 text-sm sm:text-base">
               {isSuccess 
-                ? 'Payment Verification Submitted' 
+                ? 'আবেদন সফলভাবে জমা হয়েছে' 
                 : step === 1 
-                  ? 'Partnership Request (ধাপ ১)' 
+                  ? 'এনআইডি কার্ড ভেরিফিকেশন (ধাপ ১)' 
                   : step === 2 
-                    ? 'Security Fee & Activation Rules (ধাপ ২)' 
+                    ? 'নিরাপত্তা ফি ও নিয়মাবলী (ধাপ ২)' 
                     : paymentMethod === 'USDT'
-                      ? 'USDT Payment Gateway (টিআরসি ২০)'
+                      ? 'USDT পেমেন্ট গেটওয়ে (ধাপ ৩)'
                       : paymentMethod === 'BDT'
-                        ? 'BDT Payment Gateway'
-                        : 'Select Payment Method (ধাপ ৩)'}
+                        ? 'বিকাশ / নগদ পেমেন্ট (ধাপ ৩)'
+                        : 'পেমেন্ট মেথড নির্বাচন করুন (ধাপ ৩)'}
             </h3>
           </div>
 
@@ -184,7 +223,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
           /* STEP 1: FORM INPUTS */
           <form onSubmit={handleFirstStepSubmit} className="p-4 space-y-2.5 overflow-y-auto flex-1">
             <div>
-              <label className="block text-[11px] font-bold text-gray-700 mb-0.5">Name (এনআইডি কার্ড অনুযায়ী নাম)</label>
+              <label className="block text-[11px] font-bold text-gray-700 mb-0.5">Name (কার্ড অনুযায়ী নাম)</label>
               <input 
                 type="text" 
                 required 
@@ -195,7 +234,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-gray-700 mb-0.5">NID Number (এনআইডি কার্ড নাম্বার)</label>
+              <label className="block text-[11px] font-bold text-gray-700 mb-0.5">ID / Rendy Card Number (কার্ড নাম্বার)</label>
               <input 
                 type="text" 
                 required 
@@ -227,7 +266,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold text-gray-700 mb-0.5">NID Card Image (এনআইডি কার্ডের ছবি)</label>
+              <label className="block text-[11px] font-bold text-gray-700 mb-0.5">Card Image (রেন্ডি বা আইডি কার্ডের ছবি)</label>
               
               {/* First Part */}
               <label className="flex flex-col items-center gap-1 border border-dashed border-gray-300 rounded-lg px-2 py-2 text-xs text-gray-500 cursor-pointer hover:bg-gray-50 mb-1.5 transition">
@@ -252,9 +291,10 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
             
             <button 
               type="submit" 
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0 shadow-sm hover:shadow"
+              disabled={isSubmitting}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0 shadow-sm hover:shadow disabled:opacity-50"
             >
-              Submit & Proceed (পরবর্তী ধাপে যান)
+              {isSubmitting ? 'Processing...' : 'Submit & Proceed (পরবর্তী ধাপে যান)'}
             </button>
           </form>
         ) : step === 2 ? (
@@ -403,12 +443,12 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
             <div className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                  Amount Sent (USDT) (সর্বনিম্ন ২৬ ডলার) <span className="text-red-500">*</span>
+                  Amount Sent (USDT) (সর্বনিম্ন ৫ ডলার) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   required
-                  min="26"
+                  min="5"
                   value={usdtAmount}
                   onChange={e => setUsdtAmount(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold text-gray-900 focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none"

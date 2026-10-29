@@ -1,4 +1,4 @@
 {
-  "name": "tkpaybd-merchant-demo",
-  "description": "A demo application for a merchant login interface."
+  "name": "tkpaybd-merchant-portal",
+  "description": "The official merchant portal for TKPayBD Gateway."
 }

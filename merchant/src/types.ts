@@ -49,8 +49,11 @@ export interface MerchantProfile {
   isActive?: boolean;
   isApproved?: boolean;
   status?: string;
+  accountStatus?: string;
   commissionPayin?: number;
   commissionPayout?: number;
+  isCommissionActive?: boolean;
+  commissionStatus?: 'Active' | 'Inactive' | 'Deactive';
   accountType?: 'Partnership Agent' | 'Payment Gateway Use' | 'Merchant';
   feeType?: 'Commission' | 'Charge';
 }
@@ -70,5 +73,7 @@ export interface VerificationRequest {
   paymentMethod: string;
   status: 'Pending' | 'Approved' | 'Rejected';
   submittedAt: string;
+  nidFrontPreview?: string;
+  nidBackPreview?: string;
 }
 
