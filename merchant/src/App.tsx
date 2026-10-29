@@ -59,11 +59,12 @@ export default function App() {
 
   const [apiKey, setApiKey] = useState<ApiKeyConfig>(initialApiKey);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const [checkoutData, setCheckoutData] = useState<{ txId: string; amount: number; method?: 'bKash' | 'Nagad' | 'Rocket' } | null>(() => {
+  const [checkoutData, setCheckoutData] = useState<{ txId: string; amount: number; method?: 'bKash' | 'Nagad' | 'Rocket'; merchantId?: string } | null>(() => {
     const params = new URLSearchParams(window.location.search);
     const payId = params.get('pay') || params.get('checkout');
+    const mId = params.get('m') || params.get('merchant') || params.get('merchantId');
     if (payId) {
-      return { txId: payId, amount: 500, method: 'bKash' };
+      return { txId: payId, amount: 500, method: 'bKash', merchantId: mId || undefined };
     }
     return null;
   });
@@ -767,6 +768,7 @@ export default function App() {
         amount={checkoutData.amount}
         merchantName={merchant.name}
         method={checkoutData.method || 'bKash'}
+        merchantId={checkoutData.merchantId || merchant.merchantId}
         onPaymentSubmit={handlePaymentSubmit}
         onBackToDashboard={() => setCheckoutData(null)}
       />
@@ -1102,7 +1104,8 @@ export default function App() {
               onAddTransaction={handleAddTransaction}
               onSuccessReturn={() => setActiveTab('dashboard')}
               onSelectTransaction={(tx) => setSelectedTx(tx)}
-              onOpenCheckout={(txId, amount, method) => setCheckoutData({ txId, amount, method })}
+              onOpenCheckout={(txId, amount, method, mId) => setCheckoutData({ txId, amount, method, merchantId: mId || merchant.merchantId })}
+              onNavigateToSettings={() => setActiveTab('settings')}
             />
           )}
 

@@ -53,7 +53,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
         phone: formData.phone,
         whatsapp: formData.whatsapp,
         nidNumber: formData.nidNumber,
-        amount: 1350,
+        amount: 600,
         currency: 'BDT',
         paymentMethod: 'NID Submitted (Pending Payment)',
         status: 'Pending',
@@ -96,7 +96,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
       whatsapp: formData.whatsapp,
       nidNumber: formData.nidNumber,
       trxId: (bdtTrxId || txHash || '').trim().toUpperCase(),
-      amount: paymentMethod === 'USDT' ? (Number(usdtAmount) || 5) : 1350,
+      amount: paymentMethod === 'USDT' ? (Number(usdtAmount) || 5) : 600,
       currency: paymentMethod === 'USDT' ? 'USDT' : 'BDT',
       paymentMethod: paymentMethod === 'USDT' ? 'USDT (TRC20)' : 'bKash/Nagad',
       status: 'Pending',
@@ -328,7 +328,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
               <p className="text-gray-600">আপনি যদি ওপরের সকল শর্তাবলীতে সম্মত থাকেন, তবে সিকিউরিটি ফি জমা দিয়ে আপনার একাউন্টটি অ্যাক্টিভ করতে পারেন:</p>
               <ul className="list-disc pl-4 space-y-0.5 text-gray-700">
                 <li><strong>USDT-এর মাধ্যমে:</strong> আপনি নিজে নিজেই সরাসরি USDT ব্যবহার করে একাউন্ট অ্যাক্টিভ করতে পারবেন।</li>
-                <li><strong>BDT (টাকা)-এর মাধ্যমে:</strong> বিকাশের মাধ্যমে পেমেন্ট করে একাউন্ট অ্যাক্টিভ করতে চাইলে অবশ্যই আগে আমাদের কাস্টমার সার্ভিসের সাথে যোগাযোগ করুন।</li>
+                <li><strong>BDT (টাকা)-এর মাধ্যমে:</strong> বিকাশ/নগদ এর মাধ্যমে পেমেন্ট করে একাউন্ট অ্যাক্টিভ করতে পারবেন। ফি মাত্র ৬০০ টাকা।</li>
               </ul>
             </div>
 
@@ -507,7 +507,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
                 </a>
               </div>
               <p className="text-[11px] text-gray-600">
-                টেলিগ্রাম @tkpaybd12 এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। পেমেন্ট শেষ হলে TrxID নিচে দিন।
+                টেলিগ্রাম @tkpaybd12 এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। পেমেন্ট শেষ হলে TrxID নিচে দিন। ফি ৬০০ টাকা।
               </p>
             </div>
 

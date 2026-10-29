@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ArrowLeft, Send, Smartphone, Banknote, ShoppingBag, PlusCircle, Lightbulb, PiggyBank, HeartHandshake, Search } from 'lucide-react';
+import { Copy, Check, ArrowLeft, Send, Smartphone, Banknote, ShoppingBag, PlusCircle, Lightbulb, PiggyBank, HeartHandshake, Search, Shuffle } from 'lucide-react';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
-import { getValidRandomWalletNumber } from '../utils/wallet';
+import { getWalletDetailsForMethod, syncMerchantNumbersFromFirebase } from '../utils/wallet';
 
 interface CheckoutViewProps {
   transactionId: string;
   amount: number;
   merchantName: string;
+  merchantId?: string;
   method?: 'bKash' | 'Nagad' | 'Rocket';
   onPaymentSubmit?: (txId: string, submittedTrxId: string) => void;
   onPaymentSuccess?: (txId: string) => void;
@@ -17,6 +18,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   transactionId,
   amount,
   merchantName,
+  merchantId,
   method = 'bKash',
   onPaymentSubmit,
   onPaymentSuccess,
@@ -28,14 +30,46 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [inputError, setInputError] = useState('');
 
-  // Dynamic wallet number from Admin Panel settings / getValidRandomWalletNumber
-  const [walletNumber, setWalletNumber] = useState<string>(() => getValidRandomWalletNumber(method));
+  // Determine effective merchantId from prop, URL parameter, or existing transaction
+  const effectiveMerchantId = React.useMemo(() => {
+    if (merchantId) return merchantId;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlM = params.get('m') || params.get('merchant') || params.get('merchantId');
+      if (urlM) return urlM;
+
+      const savedTx = localStorage.getItem('chaopaopay_transactions');
+      if (savedTx) {
+        const list = JSON.parse(savedTx);
+        const match = list.find((t: any) => t.transactionId === transactionId);
+        if (match && match.merchantId) return match.merchantId;
+      }
+    } catch (e) {}
+    return '';
+  }, [merchantId, transactionId]);
+
+  // Dynamic wallet info from merchant configured numbers (picks random if multiple exist)
+  const [walletInfo, setWalletInfo] = useState<{ number: string; label: 'Personal' | 'Agent'; count: number }>(() => 
+    getWalletDetailsForMethod(method, effectiveMerchantId)
+  );
 
   useEffect(() => {
+    // If merchantId is known, sync latest numbers from Firebase in background
+    if (effectiveMerchantId) {
+      syncMerchantNumbersFromFirebase(effectiveMerchantId).then((numbers) => {
+        if (numbers && numbers.length > 0) {
+          setWalletInfo(getWalletDetailsForMethod(currentMethod, effectiveMerchantId));
+        }
+      });
+    }
+
     const updateWallet = () => {
-      setWalletNumber(getValidRandomWalletNumber(currentMethod));
+      // REQUIREMENT: If multiple numbers exist for this method, picks one RANDOMLY
+      setWalletInfo(getWalletDetailsForMethod(currentMethod, effectiveMerchantId));
     };
+
     updateWallet();
     window.addEventListener('storage', updateWallet);
     window.addEventListener('depositNumbersUpdated', updateWallet);
@@ -43,7 +77,9 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       window.removeEventListener('storage', updateWallet);
       window.removeEventListener('depositNumbersUpdated', updateWallet);
     };
-  }, [currentMethod]);
+  }, [currentMethod, effectiveMerchantId]);
+
+  const walletNumber = walletInfo.number;
 
   const isBkash = currentMethod === 'bKash';
   const isNagad = currentMethod === 'Nagad';
@@ -57,8 +93,9 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
   const handleConfirm = (e: React.FormEvent) => {
     e.preventDefault();
+    setInputError('');
     if (!trxId.trim()) {
-      alert(lang === 'bn' ? 'TrxID অবশ্যই পূরণ করতে হবে!' : 'TrxID is required!');
+      setInputError(lang === 'bn' ? 'TrxID অবশ্যই পূরণ করতে হবে!' : 'TrxID is required!');
       return;
     }
 
@@ -213,13 +250,26 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
             {/* Wallet No Section matching screenshot */}
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1 font-bold text-gray-900 text-sm sm:text-base">
-                <span>Wallet No</span>
-                <span className="text-red-500">*</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-gray-900 text-sm sm:text-base">
+                  <span>Wallet No</span>
+                  <span className="text-red-500">*</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${
+                    walletInfo.label === 'Agent' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {walletInfo.label}
+                  </span>
+                </div>
+                {walletInfo.count > 1 && (
+                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md flex items-center gap-1 border border-indigo-100" title="একাধিক নাম্বার থেকে স্বয়ংক্রিয়ভাবে র‍্যান্ডম নির্বাচিত">
+                    <Shuffle className="w-3 h-3 text-indigo-500" />
+                    <span>র‍্যান্ডম ({walletInfo.count}টি নাম্বার)</span>
+                  </span>
+                )}
               </div>
               
               <p className="text-xs sm:text-[13px] text-gray-800 leading-snug font-normal">
-                এই {isBkash ? 'বিকাশ' : isNagad ? 'নগদ' : 'রকেট'} এজেন্ট অ্যাকাউন্টে অর্থ প্রদান করতে <strong className="text-red-600 font-extrabold">ক্যাশ আউট</strong> ব্যবহার করুন
+                এই {isBkash ? 'বিকাশ' : isNagad ? 'নগদ' : 'রকেট'} {walletInfo.label === 'Agent' ? 'এজেন্ট' : 'পার্সোনাল'} অ্যাকাউন্টে অর্থ প্রদান করতে <strong className="text-red-600 font-extrabold">{walletInfo.label === 'Agent' ? 'ক্যাশ আউট (Cash Out)' : 'সেন্ড মানি (Send Money)'}</strong> ব্যবহার করুন
               </p>
 
               {/* Number Box with Copy Button */}
@@ -329,16 +379,22 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
             <form onSubmit={handleConfirm} className="space-y-3 pt-1">
               <div>
                 <label className="block text-xs sm:text-sm font-black text-gray-900 mb-1.5">
-                  ক্যাশআউটের TrxID নাম্বারটি লিখুন <span className="text-red-600 font-extrabold">(প্রয়োজন)</span>
+                  {walletInfo.label === 'Agent' ? 'ক্যাশআউটের' : 'সেন্ড মানির'} TrxID নাম্বারটি লিখুন <span className="text-red-600 font-extrabold">(প্রয়োজন)</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={trxId}
-                  onChange={(e) => setTrxId(e.target.value)}
+                  onChange={(e) => {
+                    setTrxId(e.target.value);
+                    setInputError('');
+                  }}
                   placeholder="TrxID অবশ্যই পূরণ করতে হবে!"
-                  className="w-full border-2 border-red-500 rounded-2xl px-4 py-3 sm:py-3.5 text-xs sm:text-sm text-gray-900 font-mono font-bold placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 bg-[#f9fafb] text-center sm:text-left shadow-2xs uppercase"
+                  className={`w-full border-2 ${inputError ? 'border-red-600 ring-2 ring-red-200' : 'border-red-500'} rounded-2xl px-4 py-3 sm:py-3.5 text-xs sm:text-sm text-gray-900 font-mono font-bold placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 bg-[#f9fafb] text-center sm:text-left shadow-2xs uppercase`}
                 />
+                {inputError && (
+                  <p className="mt-1 text-xs text-red-600 font-bold">{inputError}</p>
+                )}
               </div>
 
               {/* নিশ্চিত (Confirm) Button */}

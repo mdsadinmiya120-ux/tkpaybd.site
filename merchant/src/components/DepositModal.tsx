@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowDownLeft, 
   ShieldCheck, 
@@ -7,11 +7,13 @@ import {
   Copy,
   Check,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Shuffle,
+  Wallet
 } from 'lucide-react';
-import { Transaction } from '../types';
+import { Transaction, DepositWalletNumber } from '../types';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
-import { getValidRandomWalletNumber } from '../utils/wallet';
+import { getValidRandomWalletNumber, getMerchantDepositNumbers } from '../utils/wallet';
 
 interface DepositModalProps {
   merchantId: string;
@@ -21,7 +23,8 @@ interface DepositModalProps {
   onAddTransaction: (tx: Transaction) => void;
   onSuccessReturn: () => void;
   onSelectTransaction: (tx: Transaction) => void;
-  onOpenCheckout: (txId: string, amount: number, method: 'bKash' | 'Nagad' | 'Rocket') => void;
+  onOpenCheckout: (txId: string, amount: number, method: 'bKash' | 'Nagad' | 'Rocket', merchantId?: string) => void;
+  onNavigateToSettings?: () => void;
 }
 
 export const DepositModal: React.FC<DepositModalProps> = ({ 
@@ -32,17 +35,24 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   onAddTransaction, 
   onSuccessReturn,
   onSelectTransaction,
-  onOpenCheckout
+  onOpenCheckout,
+  onNavigateToSettings
 }) => {
   const [amount, setAmount] = useState('500');
   const [method, setMethod] = useState<'bKash' | 'Nagad' | 'Rocket'>('bKash');
   const [generateLink, setGenerateLink] = useState(false);
-  const [depositNumbers, setDepositNumbers] = useState<{ method: 'bKash' | 'Nagad' | 'Rocket'; number: string; limit: number }[]>(() => {
-    try {
-      const saved = localStorage.getItem('chaopaopay_deposit_numbers_list');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [merchantNumbers, setMerchantNumbers] = useState(() => getMerchantDepositNumbers(merchantId));
+
+  useEffect(() => {
+    const refresh = () => setMerchantNumbers(getMerchantDepositNumbers(merchantId));
+    refresh();
+    window.addEventListener('depositNumbersUpdated', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('depositNumbersUpdated', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, [merchantId]);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [successResult, setSuccessResult] = useState<{ id: string; amount: number; link?: string } | null>(null);
@@ -88,21 +98,23 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         customerName: 'Merchant Deposit',
         createdAt: new Date().toISOString(),
         charge: numAmount * ((commissionPayin ?? 1.5) / 100),
-        walletNumber: getValidRandomWalletNumber(method),
+        walletNumber: getValidRandomWalletNumber(method, merchantId),
       };
 
       onAddTransaction(newTx);
       setLoading(false);
 
       if (generateLink) {
+        const originUrl = window.location.origin || 'https://tkpaybd.site';
+        const targetPath = window.location.pathname || '/merchant/login.php';
         setSuccessResult({
           id: randomId,
           amount: numAmount,
-          link: `https://tkpaybd.site${window.location.pathname}?pay=${randomId}`
+          link: `${originUrl}${targetPath}?pay=${randomId}&m=${encodeURIComponent(merchantId)}`
         });
       } else {
         // Directly open the cashier screen
-        onOpenCheckout(randomId, numAmount, method);
+        onOpenCheckout(randomId, numAmount, method, merchantId);
       }
     }, 600);
   };
@@ -174,7 +186,15 @@ export const DepositModal: React.FC<DepositModalProps> = ({
             </div>
           )}
 
-          <div className="pt-2 flex gap-3">
+          <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+            <button 
+              type="button"
+              onClick={() => onOpenCheckout(successResult.id, successResult.amount, method, merchantId)}
+              className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>পেমেন্ট পেজে যান (Open Checkout)</span>
+            </button>
             <button 
               type="button"
               onClick={() => setSuccessResult(null)}
@@ -247,6 +267,41 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                   );
                 })}
               </div>
+
+              {/* Active Numbers Info for Selected Method */}
+              {(() => {
+                const activeForMethod = merchantNumbers.filter((n: DepositWalletNumber) => n.method === method && n.isActive !== false);
+                return (
+                  <div className="mt-3 p-2.5 bg-gray-50/90 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span className="text-gray-600 font-medium text-[11px] sm:text-xs">
+                        {method} ওয়ালেট: <strong className="text-gray-900">{activeForMethod.length > 0 ? `${activeForMethod.length}টি সক্রিয় নম্বর` : 'ডিফল্ট নম্বর'}</strong>
+                      </span>
+                    </div>
+                    {activeForMethod.length > 1 ? (
+                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 flex items-center gap-1">
+                        <Shuffle className="w-3 h-3 text-indigo-600 animate-pulse" />
+                        <span>র‍্যান্ডম রোটেশন সক্রিয়</span>
+                      </span>
+                    ) : activeForMethod.length === 1 ? (
+                      <span className="text-[10px] font-medium text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200">
+                        {activeForMethod[0].label || 'Personal'} ({activeForMethod[0].number})
+                      </span>
+                    ) : (
+                      onNavigateToSettings && (
+                        <button
+                          type="button"
+                          onClick={onNavigateToSettings}
+                          className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                        >
+                          + নম্বর যোগ করুন
+                        </button>
+                      )
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Amount Selection */}

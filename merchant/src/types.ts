@@ -27,6 +27,17 @@ export interface ApiKeyConfig {
   createdAt: string;
 }
 
+export interface DepositWalletNumber {
+  id: string;
+  merchantId?: string;
+  method: 'bKash' | 'Nagad' | 'Rocket';
+  number: string;
+  label?: 'Personal' | 'Agent';
+  limit?: number;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
 export interface MerchantProfile {
   merchantId: string;
   name: string;
@@ -56,13 +67,14 @@ export interface MerchantProfile {
   commissionStatus?: 'Active' | 'Inactive' | 'Deactive';
   accountType?: 'Partnership Agent' | 'Payment Gateway Use' | 'Merchant';
   feeType?: 'Commission' | 'Charge';
+  depositNumbers?: DepositWalletNumber[];
 }
 
 export interface VerificationRequest {
   id: string;
   merchantId: string;
   merchantName: string;
-  type: 'GATEWAY_1350' | 'PARTNER_AGENT';
+  type: 'GATEWAY_1350' | 'GATEWAY_600' | 'PARTNER_AGENT';
   title: string;
   phone: string;
   trxId?: string;

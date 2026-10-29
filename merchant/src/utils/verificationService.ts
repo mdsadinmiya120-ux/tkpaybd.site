@@ -1,14 +1,14 @@
-import { VerificationRequest, MerchantProfile } from '../types';
+import { VerificationRequest } from '../types';
 import { database } from '../firebase';
-import { ref, set, onValue } from 'firebase/database';
+import { ref, set, update } from 'firebase/database';
 
 export const saveVerificationRequest = async (req: VerificationRequest) => {
   try {
     // Local storage persistence
     const saved = localStorage.getItem('chaopaopay_verification_requests');
     const list: VerificationRequest[] = saved ? JSON.parse(saved) : [];
-    const updated = [req, ...list.filter(item => item.id !== req.id)];
-    localStorage.setItem('chaopaopay_verification_requests', JSON.stringify(updated));
+    const updatedList = [req, ...list.filter(item => item.id !== req.id)];
+    localStorage.setItem('chaopaopay_verification_requests', JSON.stringify(updatedList));
   } catch (e) {
     console.error('LocalStorage error:', e);
   }
@@ -21,19 +21,17 @@ export const saveVerificationRequest = async (req: VerificationRequest) => {
       const lRef = ref(database, 'merchants/' + req.merchantId + '/latestVerificationRequest');
       await set(lRef, req);
 
-      // Crucial: Update merchant profile status in Firebase so it syncs back to the UI
-      import('firebase/database').then(({ update }) => {
-        const profileRef = ref(database, 'merchants/' + req.merchantId + '/profile');
-        update(profileRef, {
-          partnershipStatus: 'Pending Verification',
-          kycStatus: 'Pending'
-        }).catch(err => console.error('Error updating profile status:', err));
+      // Update merchant profile status in Firebase so it syncs back to the UI
+      const profileRef = ref(database, 'merchants/' + req.merchantId + '/profile');
+      await update(profileRef, {
+        partnershipStatus: 'Pending Verification',
+        kycStatus: 'Pending'
+      });
 
-        const dirRef = ref(database, 'merchants_directory/' + req.merchantId);
-        update(dirRef, {
-          partnershipStatus: 'Pending Verification',
-          kycStatus: 'Pending'
-        }).catch(err => console.error('Error updating directory status:', err));
+      const dirRef = ref(database, 'merchants_directory/' + req.merchantId);
+      await update(dirRef, {
+        partnershipStatus: 'Pending Verification',
+        kycStatus: 'Pending'
       });
     } catch (e) {
       console.error('Firebase save error:', e);
@@ -56,3 +54,4 @@ export const getVerificationRequests = (): VerificationRequest[] => {
   } catch (e) {}
   return [];
 };
+

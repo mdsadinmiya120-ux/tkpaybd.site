@@ -62,11 +62,11 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
       id: 'VR-GW-' + Date.now(),
       merchantId: targetMerchantId,
       merchantName: merchant.name || 'Merchant User',
-      type: 'GATEWAY_1350',
-      title: 'Payment Gateway Activation (1350 BDT)',
+      type: 'GATEWAY_600',
+      title: 'Payment Gateway Activation (600 BDT)',
       phone: bdtPhone,
       trxId: bdtTrxId.trim().toUpperCase(),
-      amount: 1350,
+      amount: 600,
       currency: 'BDT',
       paymentMethod: 'bKash/Nagad',
       status: 'Pending',
@@ -111,7 +111,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
               whatsapp: data.whatsapp || '',
               nidNumber: data.nidNumber || '',
               trxId: (data.bdtTrxId || data.txHash || '').trim().toUpperCase(),
-              amount: data.paymentMethod === 'USDT' ? (Number(data.usdtAmount) || 5) : 1350,
+              amount: data.paymentMethod === 'USDT' ? (Number(data.usdtAmount) || 5) : 600,
               currency: data.paymentMethod === 'USDT' ? 'USDT' : 'BDT',
               paymentMethod: data.paymentMethod || 'bKash/Nagad',
               status: 'Pending',
@@ -220,7 +220,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                       <span>অ্যাক্টিভেশন রিকোয়ারমেন্ট:</span>
                     </div>
                     <p className="text-xs sm:text-sm text-gray-800 leading-relaxed font-normal">
-                      এটা এক্টিভ করতে <strong className="text-red-600 font-black text-sm sm:text-base">১৩৫০ টাকা</strong> পেমেন্ট করতে হবে, দয়া করে সাপোর্ট টিমের সাথে কথা বলুন।
+                      এটা এক্টিভ করতে <strong className="text-red-600 font-black text-sm sm:text-base">৬০০ টাকা</strong> পেমেন্ট করতে হবে, দয়া করে সাপোর্ট টিমের সাথে কথা বলুন।
                     </p>
                   </div>
                 )}
@@ -265,7 +265,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                 <div className="space-y-1">
                   <h4 className="font-bold text-gray-900 text-base">পেমেন্ট ভেরিফিকেশন জমা হয়েছে!</h4>
                   <p className="text-xs text-gray-600 leading-relaxed">
-                    আপনার ১৩৫০ টাকা পেমেন্ট ও TrxID তথ্য সফলভাবে পাওয়া গেছে। সাপোর্ট টিম দ্রুত যাচাই করে আপনার পেমেন্ট গেটওয়ে এক্টিভ করে দিবে।
+                    আপনার ৬০০ টাকা পেমেন্ট ও TrxID তথ্য সফলভাবে পাওয়া গেছে। সাপোর্ট টিম দ্রুত যাচাই করে আপনার পেমেন্ট গেটওয়ে এক্টিভ করে দিবে।
                   </p>
                 </div>
 
@@ -327,14 +327,14 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                     </a>
                   </div>
                   <p className="text-[11px] text-gray-600">
-                    টেলিগ্রাম @tkpaybd12 এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। ১৩৫০ টাকা পেমেন্ট সম্পন্ন করে নিচের ফর্মে TrxID প্রদান করুন।
+                    টেলিগ্রাম @tkpaybd12 এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। ৬০০ টাকা পেমেন্ট সম্পন্ন করে নিচের ফর্মে TrxID প্রদান করুন।
                   </p>
                 </div>
 
                 {/* Amount Fee Box */}
                 <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
                   <span className="text-gray-700 font-semibold">অ্যাক্টিভেশন ফি:</span>
-                  <span className="text-red-600 font-black text-sm">১৩৫০ টাকা (1,350 BDT)</span>
+                  <span className="text-red-600 font-black text-sm">৬০০ টাকা (600 BDT)</span>
                 </div>
 
                 {/* Inputs */}

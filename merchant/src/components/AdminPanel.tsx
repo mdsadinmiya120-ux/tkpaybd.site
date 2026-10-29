@@ -627,7 +627,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             phone: acc.phone || '',
             whatsapp: acc.phone || '',
             nidNumber: acc.merchantId,
-            amount: 1350,
+            amount: 600,
             currency: 'BDT',
             paymentMethod: 'NID Submitted',
             status: 'Pending',
