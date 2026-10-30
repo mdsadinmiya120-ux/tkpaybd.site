@@ -197,17 +197,13 @@ export const PayoutModal: React.FC<PayoutModalProps> = ({
                           : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs overflow-hidden ${
-                        m === 'bKash' ? 'bg-pink-50' :
-                        m === 'Nagad' ? 'bg-orange-50' :
-                        'bg-purple-50'
-                      }`}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
                         {m === 'bKash' ? (
-                          <img src={BKASH_LOGO_URL} alt="bKash" className="w-full h-full object-contain p-0.5 rounded-full" />
+                          <img src={BKASH_LOGO_URL} alt="bKash" className="w-full h-full object-contain" />
                         ) : m === 'Nagad' ? (
-                          <img src={NAGAD_LOGO_URL} alt="Nagad" className="w-full h-full object-contain p-0.5 rounded-full" />
+                          <img src={NAGAD_LOGO_URL} alt="Nagad" className="w-7 h-7 object-contain" />
                         ) : (
-                          <img src={ROCKET_LOGO_URL} alt="Rocket" className="w-full h-full object-contain p-0.5" />
+                          <img src={ROCKET_LOGO_URL} alt="Rocket" className="w-full h-full object-contain" />
                         )}
                       </div>
                       <span className={`font-bold text-xs ${isActive ? 'text-indigo-900' : 'text-gray-800'}`}>{m}</span>

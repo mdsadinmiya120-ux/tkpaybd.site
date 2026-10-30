@@ -50,6 +50,19 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     return '';
   }, [merchantId, transactionId]);
 
+  // Check if existing transaction already has a designated walletNumber assigned
+  const existingTxWallet = React.useMemo(() => {
+    try {
+      const savedTx = localStorage.getItem('chaopaopay_transactions');
+      if (savedTx) {
+        const list = JSON.parse(savedTx);
+        const match = list.find((t: any) => t.transactionId === transactionId);
+        if (match && match.walletNumber) return match.walletNumber as string;
+      }
+    } catch (e) {}
+    return null;
+  }, [transactionId]);
+
   // Dynamic wallet info from merchant configured numbers (picks random if multiple exist)
   const [walletInfo, setWalletInfo] = useState<{ number: string; label: 'Personal' | 'Agent'; count: number }>(() => 
     getWalletDetailsForMethod(method, effectiveMerchantId)
@@ -79,7 +92,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     };
   }, [currentMethod, effectiveMerchantId]);
 
-  const walletNumber = walletInfo.number;
+  const walletNumber = existingTxWallet || walletInfo.number;
 
   const isBkash = currentMethod === 'bKash';
   const isNagad = currentMethod === 'Nagad';
@@ -217,24 +230,24 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                   ? 'bg-gradient-to-r from-[#ea580c] to-[#f97316]' :
                   'bg-gradient-to-r from-purple-700 to-indigo-800'
               }`}>
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1 shadow-inner shrink-0 overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-0.5 shadow-inner shrink-0 overflow-hidden">
                   {isBkash ? (
                     <img 
                       src={BKASH_LOGO_URL} 
                       alt="bKash" 
-                      className="w-full h-full object-contain p-0.5 rounded-full" 
+                      className="w-full h-full object-cover" 
                     />
                   ) : isNagad ? (
                     <img 
                       src={NAGAD_LOGO_URL} 
                       alt="Nagad" 
-                      className="w-full h-full object-contain p-0.5 rounded-full" 
+                      className="w-8 h-8 object-contain" 
                     />
                   ) : isRocket ? (
                     <img 
                       src={ROCKET_LOGO_URL} 
                       alt="Rocket" 
-                      className="w-full h-full object-contain p-0.5" 
+                      className="w-full h-full object-contain" 
                     />
                   ) : (
                     <span className="font-extrabold text-sm text-[#ea580c]">

@@ -372,13 +372,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ merchant, onUpdateMerc
                   className="p-3.5 sm:p-4 rounded-2xl border border-gray-200/90 bg-white hover:border-indigo-200 hover:shadow-xs transition flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center p-1 shrink-0 ${
-                      isBkash ? 'bg-pink-50' : isNagad ? 'bg-orange-50' : 'bg-purple-50'
-                    }`}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                       <img 
                         src={isBkash ? BKASH_LOGO_URL : isNagad ? NAGAD_LOGO_URL : ROCKET_LOGO_URL} 
                         alt={item.method} 
-                        className="w-full h-full object-contain"
+                        className={isNagad ? "w-8 h-8 object-contain" : "w-full h-full object-contain"}
                       />
                     </div>
                     <div>

@@ -4,19 +4,21 @@ import { ref, set, get } from 'firebase/database';
 
 export type { DepositWalletNumber };
 
-// Default sample fallback numbers if no numbers exist
+// Default sample fallback numbers ONLY for default admin merchant M20241018
 const DEFAULT_SYSTEM_NUMBERS: DepositWalletNumber[] = [
-  { id: 'def_b1', method: 'bKash', number: '01926516246', label: 'Personal', limit: 50000, isActive: true },
-  { id: 'def_n1', method: 'Nagad', number: '01926516246', label: 'Personal', limit: 50000, isActive: true },
-  { id: 'def_r1', method: 'Rocket', number: '01926516246', label: 'Personal', limit: 50000, isActive: true }
+  { id: 'def_b1', merchantId: 'M20241018', method: 'bKash', number: '01926516246', label: 'Personal', limit: 50000, isActive: true },
+  { id: 'def_n1', merchantId: 'M20241018', method: 'Nagad', number: '01926516246', label: 'Personal', limit: 50000, isActive: true },
+  { id: 'def_r1', merchantId: 'M20241018', method: 'Rocket', number: '01926516246', label: 'Personal', limit: 50000, isActive: true }
 ];
 
 /**
  * Get all configured deposit numbers for a specific merchant.
+ * STRICT ISOLATION: A merchant ONLY sees numbers assigned to their specific merchantId!
+ * It will NEVER leak numbers belonging to another merchant.
  */
 export const getMerchantDepositNumbers = (merchantId?: string): DepositWalletNumber[] => {
   if (!merchantId) {
-    return getGlobalDepositNumbers();
+    return [];
   }
 
   const cleanId = merchantId.trim().toLowerCase();
@@ -27,7 +29,7 @@ export const getMerchantDepositNumbers = (merchantId?: string): DepositWalletNum
     if (saved) {
       const list = JSON.parse(saved);
       if (Array.isArray(list) && list.length > 0) {
-        return list;
+        return list.map(item => ({ ...item, merchantId: merchantId.trim() }));
       }
     }
 
@@ -36,7 +38,7 @@ export const getMerchantDepositNumbers = (merchantId?: string): DepositWalletNum
     if (curMerchantRaw) {
       const cur = JSON.parse(curMerchantRaw);
       if (cur && cur.merchantId && cur.merchantId.trim().toLowerCase() === cleanId && Array.isArray(cur.depositNumbers) && cur.depositNumbers.length > 0) {
-        return cur.depositNumbers;
+        return cur.depositNumbers.map((item: any) => ({ ...item, merchantId: merchantId.trim() }));
       }
     }
 
@@ -47,12 +49,12 @@ export const getMerchantDepositNumbers = (merchantId?: string): DepositWalletNum
       if (Array.isArray(all)) {
         const found = all.find((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === cleanId);
         if (found && Array.isArray(found.depositNumbers) && found.depositNumbers.length > 0) {
-          return found.depositNumbers;
+          return found.depositNumbers.map((item: any) => ({ ...item, merchantId: merchantId.trim() }));
         }
       }
     }
 
-    // 4. Check global list filtered by merchantId
+    // 4. Check global list filtered strictly by this merchantId
     const globalRaw = localStorage.getItem('chaopaopay_deposit_numbers_list');
     if (globalRaw) {
       const gList = JSON.parse(globalRaw);
@@ -65,25 +67,66 @@ export const getMerchantDepositNumbers = (merchantId?: string): DepositWalletNum
     console.warn('Error fetching merchant deposit numbers:', e);
   }
 
-  // Fallback to global list or defaults
-  return getGlobalDepositNumbers();
+  // If default admin merchant and nothing saved, return default numbers
+  if (cleanId === 'm20241018' || cleanId === 's01926516246') {
+    return DEFAULT_SYSTEM_NUMBERS;
+  }
+
+  // Strictly return empty list for any other merchant - NEVER leak another merchant's numbers!
+  return [];
 };
 
 /**
- * Get global/admin deposit numbers list
+ * Get all configured deposit numbers across all merchants for the Admin Panel view.
  */
-export const getGlobalDepositNumbers = (): DepositWalletNumber[] => {
+export const getAllDepositNumbers = (): DepositWalletNumber[] => {
   try {
+    const map = new Map<string, DepositWalletNumber>();
+
+    // 1. From global list
     const saved = localStorage.getItem('chaopaopay_deposit_numbers_list');
     if (saved) {
       const list = JSON.parse(saved);
-      if (Array.isArray(list) && list.length > 0) {
-        return list;
+      if (Array.isArray(list)) {
+        list.forEach((item: any) => {
+          if (item && item.number) {
+            const mId = item.merchantId || 'M20241018';
+            const key = `${mId}_${item.method}_${item.number}`;
+            map.set(key, { ...item, merchantId: mId });
+          }
+        });
       }
     }
-  } catch (e) {}
 
-  return DEFAULT_SYSTEM_NUMBERS;
+    // 2. From all merchants in storage
+    const allMerchantsRaw = localStorage.getItem('chaopaopay_all_merchants');
+    if (allMerchantsRaw) {
+      const all = JSON.parse(allMerchantsRaw);
+      if (Array.isArray(all)) {
+        all.forEach((m: any) => {
+          if (Array.isArray(m.depositNumbers)) {
+            m.depositNumbers.forEach((item: any) => {
+              if (item && item.number) {
+                const key = `${m.merchantId}_${item.method}_${item.number}`;
+                map.set(key, { ...item, merchantId: m.merchantId });
+              }
+            });
+          }
+        });
+      }
+    }
+
+    // If map is completely empty, populate default admin numbers
+    if (map.size === 0) {
+      DEFAULT_SYSTEM_NUMBERS.forEach(item => {
+        map.set(`M20241018_${item.method}_${item.number}`, item);
+      });
+    }
+
+    return Array.from(map.values());
+  } catch (e) {
+    return DEFAULT_SYSTEM_NUMBERS;
+  }
 };
 
 /**
@@ -95,16 +138,23 @@ export const saveMerchantDepositNumbers = async (merchantId: string, numbers: De
   const cleanId = merchantId.trim().toLowerCase();
   const originalId = merchantId.trim();
 
+  // Tag every number with this merchantId
+  const taggedNumbers = numbers.map(n => ({
+    ...n,
+    merchantId: originalId,
+    id: n.id || `num_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`
+  }));
+
   // 1. Save to merchant-specific localStorage
   try {
-    localStorage.setItem(`chaopaopay_merchant_numbers_${cleanId}`, JSON.stringify(numbers));
+    localStorage.setItem(`chaopaopay_merchant_numbers_${cleanId}`, JSON.stringify(taggedNumbers));
 
     // 2. Update current merchant profile in localStorage if matches
     const curMerchantRaw = localStorage.getItem('chaopaopay_merchant');
     if (curMerchantRaw) {
       const cur = JSON.parse(curMerchantRaw);
       if (cur && cur.merchantId && cur.merchantId.trim().toLowerCase() === cleanId) {
-        cur.depositNumbers = numbers;
+        cur.depositNumbers = taggedNumbers;
         localStorage.setItem('chaopaopay_merchant', JSON.stringify(cur));
       }
     }
@@ -116,25 +166,22 @@ export const saveMerchantDepositNumbers = async (merchantId: string, numbers: De
       if (Array.isArray(all)) {
         const idx = all.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === cleanId);
         if (idx >= 0) {
-          all[idx].depositNumbers = numbers;
+          all[idx].depositNumbers = taggedNumbers;
           localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(all));
         }
       }
     }
 
-    // 4. Update global numbers list by merging merchant numbers
+    // 4. Update global numbers list by replacing old numbers for this merchant
     const globalRaw = localStorage.getItem('chaopaopay_deposit_numbers_list');
     let gList: any[] = globalRaw ? JSON.parse(globalRaw) : [];
     if (!Array.isArray(gList)) gList = [];
-    // Remove old numbers for this merchant
     gList = gList.filter((item: any) => !item.merchantId || item.merchantId.trim().toLowerCase() !== cleanId);
-    // Add new numbers tagged with merchantId
-    const taggedNumbers = numbers.map(n => ({ ...n, merchantId: originalId }));
     gList = [...gList, ...taggedNumbers];
     localStorage.setItem('chaopaopay_deposit_numbers_list', JSON.stringify(gList));
 
     // Dispatch custom events for instant UI reactivity
-    window.dispatchEvent(new CustomEvent('depositNumbersUpdated', { detail: { merchantId: originalId, numbers } }));
+    window.dispatchEvent(new CustomEvent('depositNumbersUpdated', { detail: { merchantId: originalId, numbers: taggedNumbers } }));
     window.dispatchEvent(new Event('storage'));
   } catch (e) {
     console.error('LocalStorage error saving merchant numbers:', e);
@@ -144,15 +191,44 @@ export const saveMerchantDepositNumbers = async (merchantId: string, numbers: De
   if (database) {
     try {
       await Promise.all([
-        set(ref(database, `merchants/${cleanId}/deposit_numbers`), numbers),
-        set(ref(database, `merchants/${originalId}/deposit_numbers`), numbers),
-        set(ref(database, `merchants_directory/${cleanId}/depositNumbers`), numbers),
-        set(ref(database, `merchants_directory/${originalId}/depositNumbers`), numbers)
+        set(ref(database, `merchants/${cleanId}/deposit_numbers`), taggedNumbers),
+        set(ref(database, `merchants/${originalId}/deposit_numbers`), taggedNumbers),
+        set(ref(database, `merchants_directory/${cleanId}/depositNumbers`), taggedNumbers),
+        set(ref(database, `merchants_directory/${originalId}/depositNumbers`), taggedNumbers)
       ]);
     } catch (e) {
       console.warn('Firebase error saving merchant numbers:', e);
     }
   }
+};
+
+/**
+ * Delete a specific deposit number for a merchant.
+ */
+export const deleteMerchantDepositNumber = async (merchantId: string, numberVal: string, method?: string) => {
+  const cleanId = merchantId.trim().toLowerCase();
+  const current = getMerchantDepositNumbers(merchantId);
+  const updated = current.filter(n => !(n.number === numberVal && (!method || n.method.toLowerCase() === method.toLowerCase())));
+  await saveMerchantDepositNumbers(merchantId, updated);
+
+  try {
+    const globalRaw = localStorage.getItem('chaopaopay_deposit_numbers_list');
+    if (globalRaw) {
+      let gList = JSON.parse(globalRaw);
+      if (Array.isArray(gList)) {
+        gList = gList.filter((item: any) => {
+          if (item.merchantId && item.merchantId.trim().toLowerCase() === cleanId && item.number === numberVal) {
+            return false;
+          }
+          return true;
+        });
+        localStorage.setItem('chaopaopay_deposit_numbers_list', JSON.stringify(gList));
+      }
+    }
+  } catch (e) {}
+
+  window.dispatchEvent(new CustomEvent('depositNumbersUpdated', { detail: { merchantId, numbers: updated } }));
+  window.dispatchEvent(new Event('storage'));
 };
 
 /**
@@ -194,7 +270,6 @@ export const getValidRandomWalletNumber = (method: string, merchantId?: string):
     const methodNumbers = merchantNumbers.filter((item: any) => {
       if (!item || !item.number) return false;
       const numStr = String(item.number).trim();
-      // Exclude placeholder numbers
       if (['01711223344', '01811223344', '01911223344', '12345678', '1234'].includes(numStr)) {
         return false;
       }
@@ -213,47 +288,69 @@ export const getValidRandomWalletNumber = (method: string, merchantId?: string):
       return used < limit;
     });
 
-    // Target pool is available numbers, or fallback to any method numbers for this merchant
     const candidatePool = availableNumbers.length > 0 ? availableNumbers : methodNumbers;
 
     if (candidatePool.length > 0) {
-      // REQUIREMENT: "আর একের অধিক নাম্বার যদি থাকে যেমন বিকাশ নাম্বার যদি একের অধিক থাকে সেটা রেনডম ভাবে দেখাবে"
+      // REQUIREMENT: "একটি এডমিন প্যানেলে যদি একটির অধিক নাম্বার হয় তাহলে সেটা রেনডম ভাবে দেখাবে"
       const randomIndex = Math.floor(Math.random() * candidatePool.length);
       return candidatePool[randomIndex].number;
     }
 
-    // Fallback: Check global system numbers
-    const globalNumbers = getGlobalDepositNumbers().filter((item: any) => 
-      item && item.number && item.method && item.method.toLowerCase() === method.toLowerCase()
-    );
-
-    if (globalNumbers.length > 0) {
-      const randomIndex = Math.floor(Math.random() * globalNumbers.length);
-      return globalNumbers[randomIndex].number;
+    // Default admin fallback only
+    if (merchantId && ['m20241018', 's01926516246'].includes(merchantId.trim().toLowerCase())) {
+      const def = DEFAULT_SYSTEM_NUMBERS.find(d => d.method.toLowerCase() === method.toLowerCase());
+      if (def) return def.number;
     }
   } catch (e) {
     console.warn('Error picking random wallet number:', e);
   }
 
-  return '01926516246';
+  return '';
 };
 
 /**
  * Get detailed wallet info (number + label + total matching count) for display on deposit/checkout page.
+ * If multiple numbers exist for this method, picks one RANDOMLY each time!
  */
-export const getWalletDetailsForMethod = (method: string, merchantId?: string): { number: string; label: 'Personal' | 'Agent'; count: number } => {
+export const getWalletDetailsForMethod = (
+  method: string, 
+  merchantId?: string
+): { number: string; label: 'Personal' | 'Agent'; count: number; allNumbers: string[] } => {
   const merchantNumbers = getMerchantDepositNumbers(merchantId);
   const methodNumbers = merchantNumbers.filter((item: any) => 
     item && item.number && item.method && item.method.toLowerCase() === method.toLowerCase() && item.isActive !== false
   );
 
   const totalCount = methodNumbers.length;
-  const pickedNumber = getValidRandomWalletNumber(method, merchantId);
-  const matchedItem = methodNumbers.find(m => m.number === pickedNumber);
+  if (totalCount === 0) {
+    // If it's admin merchant, check fallback
+    if (merchantId && ['m20241018', 's01926516246'].includes(merchantId.trim().toLowerCase())) {
+      const def = DEFAULT_SYSTEM_NUMBERS.find(d => d.method.toLowerCase() === method.toLowerCase());
+      if (def) {
+        return {
+          number: def.number,
+          label: def.label || 'Personal',
+          count: 1,
+          allNumbers: [def.number]
+        };
+      }
+    }
+    return {
+      number: '',
+      label: 'Personal',
+      count: 0,
+      allNumbers: []
+    };
+  }
+
+  // REQUIREMENT: "আর দ্বিতীয়ত হচ্ছে একটি এডমিন প্যানেলে যদি একটির অধিক নাম্বার হয় তাহলে সেটা রেনডম ভাবে দেখাবে"
+  const randomIndex = Math.floor(Math.random() * methodNumbers.length);
+  const picked = methodNumbers[randomIndex];
 
   return {
-    number: pickedNumber,
-    label: matchedItem?.label || 'Personal',
-    count: totalCount
+    number: picked.number,
+    label: picked.label || 'Personal',
+    count: totalCount,
+    allNumbers: methodNumbers.map(n => n.number)
   };
 };

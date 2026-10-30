@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ArrowDownLeft, 
   ShieldCheck, 
@@ -30,7 +30,7 @@ interface DepositModalProps {
 export const DepositModal: React.FC<DepositModalProps> = ({ 
   merchantId,
   currentBalance, 
-  commissionPayin,
+  commissionPayin, 
   transactions, 
   onAddTransaction, 
   onSuccessReturn,
@@ -42,6 +42,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   const [method, setMethod] = useState<'bKash' | 'Nagad' | 'Rocket'>('bKash');
   const [generateLink, setGenerateLink] = useState(false);
   const [merchantNumbers, setMerchantNumbers] = useState(() => getMerchantDepositNumbers(merchantId));
+  const [randomSeed, setRandomSeed] = useState(0);
 
   useEffect(() => {
     const refresh = () => setMerchantNumbers(getMerchantDepositNumbers(merchantId));
@@ -53,6 +54,19 @@ export const DepositModal: React.FC<DepositModalProps> = ({
       window.removeEventListener('storage', refresh);
     };
   }, [merchantId]);
+
+  // Active numbers strictly for this merchant and selected method
+  const activeForMethod = useMemo(() => {
+    return merchantNumbers.filter((n: DepositWalletNumber) => n.method === method && n.isActive !== false);
+  }, [merchantNumbers, method]);
+
+  // Random wallet chosen for this deposit session
+  const currentWallet = useMemo(() => {
+    if (activeForMethod.length === 0) return null;
+    if (activeForMethod.length === 1) return activeForMethod[0];
+    const idx = Math.floor(Math.random() * activeForMethod.length);
+    return activeForMethod[idx];
+  }, [activeForMethod, randomSeed]);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [successResult, setSuccessResult] = useState<{ id: string; amount: number; link?: string } | null>(null);
@@ -98,7 +112,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         customerName: 'Merchant Deposit',
         createdAt: new Date().toISOString(),
         charge: numAmount * ((commissionPayin ?? 1.5) / 100),
-        walletNumber: getValidRandomWalletNumber(method, merchantId),
+        walletNumber: currentWallet ? currentWallet.number : getValidRandomWalletNumber(method, merchantId),
       };
 
       onAddTransaction(newTx);
@@ -249,17 +263,13 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                           : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs overflow-hidden ${
-                        m === 'bKash' ? 'bg-pink-50' :
-                        m === 'Nagad' ? 'bg-orange-50' :
-                        'bg-purple-50'
-                      }`}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
                         {m === 'bKash' ? (
-                          <img src={BKASH_LOGO_URL} alt="bKash" className="w-full h-full object-contain p-0.5 rounded-full" />
+                          <img src={BKASH_LOGO_URL} alt="bKash" className="w-full h-full object-contain" />
                         ) : m === 'Nagad' ? (
-                          <img src={NAGAD_LOGO_URL} alt="Nagad" className="w-full h-full object-contain p-0.5 rounded-full" />
+                          <img src={NAGAD_LOGO_URL} alt="Nagad" className="w-7 h-7 object-contain" />
                         ) : (
-                          <img src={ROCKET_LOGO_URL} alt="Rocket" className="w-full h-full object-contain p-0.5" />
+                          <img src={ROCKET_LOGO_URL} alt="Rocket" className="w-full h-full object-contain" />
                         )}
                       </div>
                       <span className={`font-bold text-xs ${isActive ? 'text-indigo-900' : 'text-gray-800'}`}>{m}</span>
@@ -268,40 +278,65 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                 })}
               </div>
 
-              {/* Active Numbers Info for Selected Method */}
-              {(() => {
-                const activeForMethod = merchantNumbers.filter((n: DepositWalletNumber) => n.method === method && n.isActive !== false);
-                return (
-                  <div className="mt-3 p-2.5 bg-gray-50/90 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-4 h-4 text-indigo-600 shrink-0" />
-                      <span className="text-gray-600 font-medium text-[11px] sm:text-xs">
-                        {method} ওয়ালেট: <strong className="text-gray-900">{activeForMethod.length > 0 ? `${activeForMethod.length}টি সক্রিয় নম্বর` : 'ডিফল্ট নম্বর'}</strong>
+              {/* Active Numbers Info for Selected Method (Strict Per-Merchant Isolation) */}
+              <div className="mt-3 p-3 bg-gray-50/90 rounded-xl border border-gray-100 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span className="text-gray-600 font-medium text-[11px] sm:text-xs">
+                      {method} ওয়ালেট: <strong className="text-gray-900">{activeForMethod.length > 0 ? `${activeForMethod.length}টি সক্রিয় নম্বর` : 'কোনো নম্বর অ্যাসাইন করা নেই'}</strong>
+                    </span>
+                  </div>
+                  {activeForMethod.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setRandomSeed(s => s + 1)}
+                      className="text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md border border-indigo-200 flex items-center gap-1 cursor-pointer transition active:scale-95"
+                      title="র‍্যান্ডম রোটেশন পরিবর্তন করুন"
+                    >
+                      <Shuffle className="w-3 h-3 text-indigo-600 animate-pulse" />
+                      <span>র‍্যান্ডম পরিবর্তন</span>
+                    </button>
+                  )}
+                </div>
+
+                {activeForMethod.length > 1 ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1.5 border-t border-gray-200/70">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase">বাছাইকৃত ওয়ালেট:</span>
+                      <span className="font-mono font-bold text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 text-xs shadow-2xs">
+                        {currentWallet?.number}
+                      </span>
+                      <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                        {currentWallet?.label || 'Personal'}
                       </span>
                     </div>
-                    {activeForMethod.length > 1 ? (
-                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 flex items-center gap-1">
-                        <Shuffle className="w-3 h-3 text-indigo-600 animate-pulse" />
-                        <span>র‍্যান্ডম রোটেশন সক্রিয়</span>
-                      </span>
-                    ) : activeForMethod.length === 1 ? (
-                      <span className="text-[10px] font-medium text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200">
-                        {activeForMethod[0].label || 'Personal'} ({activeForMethod[0].number})
-                      </span>
-                    ) : (
-                      onNavigateToSettings && (
-                        <button
-                          type="button"
-                          onClick={onNavigateToSettings}
-                          className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
-                        >
-                          + নম্বর যোগ করুন
-                        </button>
-                      )
+                    <span className="text-[10px] text-indigo-600 font-bold flex items-center gap-1">
+                      <span>• {activeForMethod.length}টি নম্বরের মধ্যে স্বয়ংক্রিয় রেনডম রোটেশন</span>
+                    </span>
+                  </div>
+                ) : activeForMethod.length === 1 ? (
+                  <div className="flex items-center justify-between pt-1.5 border-t border-gray-200/70">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase">নির্ধারিত ওয়ালেট নম্বর:</span>
+                    <span className="text-xs font-mono font-bold text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-2xs">
+                      {activeForMethod[0].number} ({activeForMethod[0].label || 'Personal'})
+                    </span>
+                  </div>
+                ) : (
+                  <div className="pt-1.5 border-t border-gray-200/70 text-[11px] text-amber-700 bg-amber-50/80 p-2 rounded-lg flex items-center justify-between">
+                    <span>⚠️ মার্চেন্ট আইডিতে ({merchantId}) কোনো {method} নম্বর যোগ করা নেই।</span>
+                    {onNavigateToSettings && (
+                      <button
+                        type="button"
+                        onClick={onNavigateToSettings}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer shrink-0 ml-2"
+                      >
+                        + নম্বর যোগ করুন
+                      </button>
                     )}
                   </div>
-                );
-              })()}
+                )}
+              </div>
             </div>
 
             {/* Amount Selection */}
