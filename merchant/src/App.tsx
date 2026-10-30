@@ -86,20 +86,20 @@ export default function App() {
   // Centralized evaluation function to guarantee Master Admin Panel authority
   const evaluateAccountActive = (data: any, isMaster: boolean = false): boolean => {
     if (isMaster) return true;
-    if (!data) return false;
+    if (!data) return true;
     
     // Explicit inactive check takes absolute precedence
-    if (data.isActive === false || data.status === 'Inactive' || data.accountStatus === 'Inactive' || data.partnershipStatus === 'Rejected') {
+    if (data.isActive === false || data.status === 'Inactive' || data.accountStatus === 'Inactive' || data.partnershipStatus === 'Rejected' || data.partnershipStatus === 'Inactive') {
       return false;
     }
     
-    // Only active if explicitly approved & activated by Master Admin Panel
-    return Boolean(
-      data.isActive === true && 
-      data.isApproved === true && 
-      data.partnershipStatus === 'Approved' && 
-      (data.status === 'Active' || data.accountStatus === 'Active')
-    );
+    // If explicitly marked active or approved
+    if (data.isActive === true || data.status === 'Active' || data.accountStatus === 'Active' || data.isApproved === true || data.partnershipStatus === 'Approved') {
+      return true;
+    }
+    
+    // Default to active for registered merchants so partial updates never mark them inactive
+    return true;
   };
 
   // Strict Account Active Logic
@@ -337,10 +337,15 @@ export default function App() {
             prev.email === 'sadin@tkpaybd.site'
           );
 
-          const newIsActive = evaluateAccountActive(val, isMaster);
+          const hasStatusField = val.isActive !== undefined || val.status !== undefined || val.accountStatus !== undefined || val.partnershipStatus !== undefined || val.isApproved !== undefined;
+
+          const merged = { ...prev, ...val };
+          const newIsActive = hasStatusField 
+            ? evaluateAccountActive(merged, isMaster) 
+            : (prev.isActive !== false);
 
           const newStatus = val.status || (newIsActive ? 'Active' : 'Inactive');
-          const newPartner = val.isPartnerAgent !== undefined ? val.isPartnerAgent : (newIsActive ? (val.isPartnerAgent !== false) : false);
+          const newPartner = val.isPartnerAgent !== undefined ? val.isPartnerAgent : (newIsActive ? (prev.isPartnerAgent !== false) : false);
           const updatedPartnerStatus = val.partnershipStatus || (newIsActive ? 'Approved' : 'Inactive');
           const newKyc = val.kycStatus || (newIsActive ? 'Verified' : 'Unverified');
           const newApproved = val.isApproved !== undefined ? val.isApproved : newIsActive;

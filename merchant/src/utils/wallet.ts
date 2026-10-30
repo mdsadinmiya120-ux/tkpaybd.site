@@ -155,6 +155,11 @@ export const saveMerchantDepositNumbers = async (merchantId: string, numbers: De
       const cur = JSON.parse(curMerchantRaw);
       if (cur && cur.merchantId && cur.merchantId.trim().toLowerCase() === cleanId) {
         cur.depositNumbers = taggedNumbers;
+        if (cur.isActive === undefined || cur.isActive === false) cur.isActive = true;
+        if (!cur.status || cur.status === 'Inactive') cur.status = 'Active';
+        if (!cur.accountStatus || cur.accountStatus === 'Inactive') cur.accountStatus = 'Active';
+        if (!cur.partnershipStatus || cur.partnershipStatus === 'Inactive' || cur.partnershipStatus === 'Rejected') cur.partnershipStatus = 'Approved';
+        if (cur.isApproved === undefined) cur.isApproved = true;
         localStorage.setItem('chaopaopay_merchant', JSON.stringify(cur));
       }
     }
@@ -167,6 +172,11 @@ export const saveMerchantDepositNumbers = async (merchantId: string, numbers: De
         const idx = all.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === cleanId);
         if (idx >= 0) {
           all[idx].depositNumbers = taggedNumbers;
+          if (all[idx].isActive === undefined || all[idx].isActive === false) all[idx].isActive = true;
+          if (!all[idx].status || all[idx].status === 'Inactive') all[idx].status = 'Active';
+          if (!all[idx].accountStatus || all[idx].accountStatus === 'Inactive') all[idx].accountStatus = 'Active';
+          if (!all[idx].partnershipStatus || all[idx].partnershipStatus === 'Inactive' || all[idx].partnershipStatus === 'Rejected') all[idx].partnershipStatus = 'Approved';
+          if (all[idx].isApproved === undefined) all[idx].isApproved = true;
           localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(all));
         }
       }

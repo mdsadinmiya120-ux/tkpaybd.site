@@ -19,7 +19,8 @@ import {
   Copy,
   Eye,
   Shuffle,
-  Wallet
+  Wallet,
+  CreditCard
 } from 'lucide-react';
 import { Transaction, MerchantProfile, VerificationRequest, DepositWalletNumber } from '../types';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
@@ -709,13 +710,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTimeout(() => setFeedbackMsg(null), 3500);
   };
 
+  const [adminSection, setAdminSection] = useState<'wallets' | 'transactions' | 'accounts' | 'verifications'>('wallets');
   const [depositNumbers, setDepositNumbers] = useState<DepositWalletNumber[]>(() => {
     return getAllDepositNumbers();
   });
-  const [targetMerchantId, setTargetMerchantId] = useState<string>(() => {
-    return merchant.merchantId || (allAccounts[0]?.merchantId ?? 'M20241018');
-  });
-  const [filterMerchantId, setFilterMerchantId] = useState<string>('all');
   const [newNumMethod, setNewNumMethod] = useState<'bKash' | 'Nagad' | 'Rocket'>('bKash');
   const [newNumVal, setNewNumVal] = useState('');
   const [newNumLimit, setNewNumLimit] = useState('50000');
@@ -736,11 +734,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const cleanNum = newNumVal.trim();
     if (!cleanNum) return;
     const limitNum = parseFloat(newNumLimit) || 50000;
-    const destMerchantId = targetMerchantId.trim();
+    const currentMerchantId = (merchant.merchantId || 'M20241018').trim();
 
     const newEntry: DepositWalletNumber = {
       id: `num_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      merchantId: destMerchantId,
+      merchantId: currentMerchantId,
       method: newNumMethod,
       number: cleanNum,
       limit: limitNum,
@@ -749,32 +747,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       createdAt: new Date().toISOString()
     };
 
-    const currentMerchantNums = getMerchantDepositNumbers(destMerchantId);
+    const currentMerchantNums = getMerchantDepositNumbers(currentMerchantId);
     if (currentMerchantNums.some(n => n.number === cleanNum && n.method === newNumMethod)) {
-      setFeedbackMsg({ text: `মার্চেন্ট ${destMerchantId}-এ এই ${newNumMethod} নম্বরটি ইতিমধ্যে যোগ করা আছে!`, type: 'error' });
+      setFeedbackMsg({ text: `আপনার মার্চেন্ট অ্যাকাউন্টে এই ${newNumMethod} নম্বরটি ইতিমধ্যে যোগ করা আছে!`, type: 'error' });
       setTimeout(() => setFeedbackMsg(null), 3500);
       return;
     }
 
     const updated = [newEntry, ...currentMerchantNums];
-    await saveMerchantDepositNumbers(destMerchantId, updated);
+    await saveMerchantDepositNumbers(currentMerchantId, updated);
     setDepositNumbers(getAllDepositNumbers());
+
+    // Explicitly guarantee current merchant remains Active and unlocked
+    setAllAccounts(prev => prev.map(a => {
+      if (a.merchantId && a.merchantId.trim().toLowerCase() === currentMerchantId.toLowerCase()) {
+        return {
+          ...a,
+          isActive: true,
+          status: 'Active',
+          accountStatus: 'Active',
+          partnershipStatus: 'Approved',
+          isApproved: true
+        };
+      }
+      return a;
+    }));
 
     setNewNumVal('');
     setNewNumLimit('50000');
     setNewNumLabel('Personal');
     setFeedbackMsg({ 
-      text: `মার্চেন্ট ${destMerchantId}-এর অ্যাকাউন্টে নতুন ${newNumMethod} (${newNumLabel}) নম্বর সফলভাবে যোগ করা হয়েছে! এটি শুধুমাত্র এই মার্চেন্টের অ্যাকাউন্টে সংরক্ষিত থাকবে।`, 
+      text: `আপনার অ্যাকাউন্টে নতুন ${newNumMethod} (${newNumLabel}) নম্বর (${cleanNum}) সফলভাবে যোগ করা হয়েছে!`, 
       type: 'success' 
     });
     setTimeout(() => setFeedbackMsg(null), 4000);
   };
 
   const handleDeleteNumber = async (item: DepositWalletNumber) => {
-    const mId = item.merchantId || targetMerchantId || 'M20241018';
+    const mId = (item.merchantId || merchant.merchantId || 'M20241018').trim();
     await deleteMerchantDepositNumber(mId, item.number, item.method);
     setDepositNumbers(getAllDepositNumbers());
-    setFeedbackMsg({ text: `মার্চেন্ট ${mId} থেকে ${item.method} নম্বর (${item.number}) মুছে ফেলা হয়েছে।`, type: 'error' });
+    setFeedbackMsg({ text: `আপনার অ্যাকাউন্ট থেকে ${item.method} নম্বর (${item.number}) মুছে ফেলা হয়েছে।`, type: 'error' });
     setTimeout(() => setFeedbackMsg(null), 3500);
   };
 
@@ -798,24 +811,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full lg:w-auto">
-            <div className="bg-amber-50/50 border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center">
-              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Pending Deposits</p>
+            <button 
+              type="button"
+              onClick={() => { setAdminSection('transactions'); setFilterType('PendingDeposit'); }}
+              className="bg-amber-50/50 hover:bg-amber-100/60 transition border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+            >
+              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5 group-hover:text-amber-800">Pending Deposits</p>
               <p className="text-base font-black text-amber-900">{pendingDeposits.length}</p>
-            </div>
-            <div className="bg-amber-50/50 border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center">
-              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5">Pending Payouts</p>
+            </button>
+            <button 
+              type="button"
+              onClick={() => { setAdminSection('transactions'); setFilterType('PendingWithdrawal'); }}
+              className="bg-amber-50/50 hover:bg-amber-100/60 transition border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+            >
+              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5 group-hover:text-amber-800">Pending Payouts</p>
               <p className="text-base font-black text-amber-900">{pendingWithdrawals.length}</p>
-            </div>
-            <div className="bg-purple-50/50 border border-purple-100 p-2 sm:p-2.5 rounded-2xl text-center">
-              <p className="text-[8px] font-bold text-purple-700 uppercase tracking-wider mb-0.5">Verifications</p>
+            </button>
+            <button 
+              type="button"
+              onClick={() => setAdminSection('verifications')}
+              className="bg-purple-50/50 hover:bg-purple-100/60 transition border border-purple-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+            >
+              <p className="text-[8px] font-bold text-purple-700 uppercase tracking-wider mb-0.5 group-hover:text-purple-800">Verifications</p>
               <p className="text-base font-black text-purple-900">
                 {displayVerificationRequests.filter(r => r.status === 'Pending').length}
               </p>
-            </div>
-            <div className="bg-emerald-50/50 border border-emerald-100 p-2 sm:p-2.5 rounded-2xl text-center">
-              <p className="text-[8px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5">System Balance</p>
+            </button>
+            <button 
+              type="button"
+              onClick={() => setAdminSection('wallets')}
+              className="bg-emerald-50/50 hover:bg-emerald-100/60 transition border border-emerald-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+            >
+              <p className="text-[8px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5 group-hover:text-emerald-800">System Balance</p>
               <p className="text-[11px] font-black text-emerald-900 truncate px-1">{formatBDT(merchant.balance)}</p>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -831,7 +860,86 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
       </div>
 
-      {isSuperAdmin && (
+      {/* Admin Section Tabs Navigation */}
+      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
+        <button
+          type="button"
+          onClick={() => setAdminSection('wallets')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
+            adminSection === 'wallets'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <Wallet className="w-4 h-4" />
+          <span>ডিপোজিট নম্বর সেটিংস</span>
+          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+            adminSection === 'wallets' ? 'bg-indigo-700 text-indigo-100' : 'bg-gray-100 text-gray-600'
+          }`}>
+            {depositNumbers.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAdminSection('transactions')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
+            adminSection === 'transactions'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          <span>লেনদেন ও অনুমোদন</span>
+          {(pendingDeposits.length > 0 || pendingWithdrawals.length > 0) && (
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500 text-white animate-pulse">
+              {pendingDeposits.length + pendingWithdrawals.length}
+            </span>
+          )}
+        </button>
+
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => setAdminSection('accounts')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
+              adminSection === 'accounts'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>মার্চেন্ট অ্যাকাউন্ট তালিকা</span>
+            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
+              adminSection === 'accounts' ? 'bg-indigo-700 text-indigo-100' : 'bg-gray-100 text-gray-600'
+            }`}>
+              {allAccounts.length}
+            </span>
+          </button>
+        )}
+
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => setAdminSection('verifications')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
+              adminSection === 'verifications'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>পার্টনার আবেদন</span>
+            {displayVerificationRequests.filter(r => r.status === 'Pending').length > 0 && (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-600 text-white animate-pulse">
+                {displayVerificationRequests.filter(r => r.status === 'Pending').length}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
+
+      {isSuperAdmin && adminSection === 'verifications' && (
         <>
           {/* Verification & Partner Requests (Pending Submissions) */}
           <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-4">
@@ -983,7 +1091,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       </>)}
 
       {/* Master Admin: Account Control */}
-      {isSuperAdmin && (
+      {isSuperAdmin && adminSection === 'accounts' && (
         <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-50 pb-4">
             <div>
@@ -1427,248 +1535,233 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       )}
 
       {/* Deposit Numbers Management - Isolated Per Merchant */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-indigo-600" />
-              <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">
-                মার্চেন্ট ডিপোজিট ওয়ালেট নম্বর সেটিংস (Merchant Wallet Numbers)
-              </h3>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              ভিন্ন ভিন্ন মার্চেন্ট আইডির জন্য আলাদা নম্বর যোগ করুন। যে মার্চেন্টের অ্যাকাউন্টে নম্বর যোগ করবেন, শুধুমাত্র সেই মার্চেন্টের ডিপোজিটে তা দেখাবে।
-            </p>
-          </div>
-          <span className="text-[11px] font-black bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl self-start sm:self-auto shrink-0 border border-indigo-100">
-            মোট ওয়ালেট: {depositNumbers.length}
-          </span>
-        </div>
+      {adminSection === 'wallets' && (
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
+        {/* Section Header */}
+        {(() => {
+          const currentMId = (merchant.merchantId || 'M20241018').trim();
+          const myDepositNumbers = depositNumbers.filter(
+            n => (n.merchantId || '').trim().toLowerCase() === currentMId.toLowerCase()
+          );
 
-        {/* Add Number Form with Merchant Selection */}
-        <form onSubmit={handleAddNumber} className="bg-gray-50/70 p-4 sm:p-5 rounded-2xl border border-gray-200/80 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-            {/* Target Merchant Dropdown */}
-            <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
-              <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">
-                অ্যাসাইন করার মার্চেন্ট (Target Merchant) <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={targetMerchantId}
-                onChange={(e) => setTargetMerchantId(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
-              >
-                {allAccounts.map((acc) => (
-                  <option key={acc.merchantId} value={acc.merchantId}>
-                    ID: {acc.merchantId} — {acc.name || acc.email} ({acc.phone || 'No Phone'})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Method */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">মেথড</label>
-              <select
-                value={newNumMethod}
-                onChange={(e) => setNewNumMethod(e.target.value as any)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
-              >
-                <option value="bKash">bKash</option>
-                <option value="Nagad">Nagad</option>
-                <option value="Rocket">Rocket</option>
-              </select>
-            </div>
-
-            {/* Label */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">টাইপ</label>
-              <select
-                value={newNumLabel}
-                onChange={(e) => setNewNumLabel(e.target.value as any)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
-              >
-                <option value="Personal">Personal</option>
-                <option value="Agent">Agent</option>
-              </select>
-            </div>
-
-            {/* Limit */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">ম্যাক্স লিমিট (BDT)</label>
-              <input
-                type="number"
-                required
-                placeholder="50000"
-                value={newNumLimit}
-                onChange={(e) => setNewNumLimit(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
-              />
-            </div>
-
-            {/* Wallet Number Input */}
-            <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
-              <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">
-                ওয়ালেট মোবাইল নম্বর (Wallet Number)
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="যেমন: 017XXXXXXXX"
-                value={newNumVal}
-                onChange={(e) => setNewNumVal(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="sm:col-span-2 lg:col-span-1 flex items-end">
-              <button
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl transition shadow-md shadow-indigo-100 active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer h-[38px]"
-              >
-                <span>যোগ করুন</span>
-              </button>
-            </div>
-          </div>
-        </form>
-
-        {/* Active Wallets & Filters */}
-        <div className="space-y-3 pt-2">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <p className="font-bold text-[11px] text-gray-500 uppercase tracking-widest px-1">
-                সক্রিয় ওয়ালেট তালিকা (Active Wallets by Merchant)
-              </p>
-            </div>
-
-            {/* Filter by Merchant */}
-            <div className="flex items-center gap-2 self-stretch sm:self-auto">
-              <span className="text-xs font-semibold text-gray-500 shrink-0">মার্চেন্ট ফিল্টার:</span>
-              <select
-                value={filterMerchantId}
-                onChange={(e) => setFilterMerchantId(e.target.value)}
-                className="bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:border-indigo-500 transition"
-              >
-                <option value="all">সকল মার্চেন্ট ({depositNumbers.length}টি)</option>
-                {allAccounts.map(m => {
-                  const mCount = depositNumbers.filter(n => n.merchantId?.toLowerCase() === m.merchantId.toLowerCase()).length;
-                  return (
-                    <option key={m.merchantId} value={m.merchantId}>
-                      {m.merchantId} - {m.name || m.email} ({mCount}টি)
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          </div>
-
-          {/* Random Rotation Banner Notice */}
-          <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/80 rounded-xl flex items-center gap-2.5 text-indigo-900 text-xs">
-            <Shuffle className="w-4 h-4 text-indigo-600 shrink-0 animate-pulse" />
-            <p className="leading-snug">
-              <strong>র‍্যান্ডম রোটেশন সক্রিয়:</strong> কোনো মার্চেন্টের একটি মেথডে (যেমন bKash) একের অধিক নম্বর থাকলে ডিপোজিট বা চেকআউটে প্রতিবার স্বয়ংক্রিয়ভাবে একটি রেনডম নম্বর বরাদ্দ হবে।
-            </p>
-          </div>
-
-          {/* Grid of Wallets */}
-          {(() => {
-            const filteredWallets = filterMerchantId === 'all' 
-              ? depositNumbers 
-              : depositNumbers.filter(n => n.merchantId?.toLowerCase() === filterMerchantId.toLowerCase());
-
-            if (filteredWallets.length === 0) {
-              return (
-                <div className="p-10 text-center text-gray-400 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-xs font-medium">
-                  {filterMerchantId === 'all' 
-                    ? 'কোনো ওয়ালেট নম্বর যোগ করা হয়নি।' 
-                    : `মার্চেন্ট ${filterMerchantId}-এর অ্যাকাউন্টে কোনো ওয়ালেট নম্বর যোগ করা নেই। উপরের ফর্ম থেকে নম্বর যোগ করুন।`}
+          return (
+            <>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-indigo-600" />
+                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">
+                      ডিপোজিট ওয়ালেট নম্বর সেটিংস (Deposit Wallet Numbers)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    আপনার মার্চেন্ট অ্যাকাউন্টের ডিপোজিট নম্বর যোগ করুন। একের অধিক নম্বর থাকলে স্বয়ংক্রিয়ভাবে রেনডম পদ্ধতিতে গ্রাহকদের প্রদান করা হবে।
+                  </p>
                 </div>
-              );
-            }
+                <span className="text-[11px] font-black bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl self-start sm:self-auto shrink-0 border border-indigo-100">
+                  আপনার ওয়ালেট: {myDepositNumbers.length}টি
+                </span>
+              </div>
 
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
-                {filteredWallets.map((item, idx) => {
-                  const usedAmount = transactions
-                    .filter(t => t.walletNumber === item.number && (t.status === 'Success' || t.status === 'Pending'))
-                    .reduce((sum, t) => sum + t.amount, 0);
-                  const limit = item.limit || 50000;
-                  const isExceeded = usedAmount >= limit;
-                  const ownerMerchant = allAccounts.find(a => a.merchantId?.toLowerCase() === item.merchantId?.toLowerCase());
+              {/* Add Number Form - Locked to Own Merchant */}
+              <form onSubmit={handleAddNumber} className="bg-gray-50/70 p-4 sm:p-5 rounded-2xl border border-gray-200/80 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                  {/* Current Merchant (Locked / Read-only) */}
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">
+                      আপনার মার্চেন্ট অ্যাকাউন্ট (Merchant ID)
+                    </label>
+                    <div className="w-full bg-white border border-gray-200/90 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 flex items-center justify-between shadow-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
+                        <span className="font-mono font-black text-indigo-600 text-xs tracking-wide">
+                          {merchant.merchantId || 'M20241018'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-gray-500 font-semibold truncate max-w-[140px] bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                        {merchant.name || merchant.email || 'Merchant Account'}
+                      </span>
+                    </div>
+                  </div>
 
-                  return (
-                    <div key={item.id || idx} className="p-4 border border-gray-100 rounded-2xl bg-white hover:border-indigo-100 transition shadow-xs group">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-2 min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                              item.method === 'bKash' ? 'bg-pink-100 text-pink-700' :
-                              item.method === 'Nagad' ? 'bg-orange-100 text-orange-700' :
-                              'bg-purple-100 text-purple-700'
-                            }`}>
-                              {item.method}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                              item.label === 'Personal' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
-                            }`}>
-                              {item.label || 'Personal'}
-                            </span>
-                            <span className="font-mono font-bold text-gray-900 text-sm">{item.number}</span>
-                          </div>
+                  {/* Method */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">মেথড</label>
+                    <select
+                      value={newNumMethod}
+                      onChange={(e) => setNewNumMethod(e.target.value as any)}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                    >
+                      <option value="bKash">bKash</option>
+                      <option value="Nagad">Nagad</option>
+                      <option value="Rocket">Rocket</option>
+                    </select>
+                  </div>
 
-                          {/* Merchant Identifier Badge */}
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <span className="text-gray-400 font-medium">মার্চেন্ট ID:</span>
-                            <span className="font-mono font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100">
-                              {item.merchantId || 'M20241018'}
-                            </span>
-                            {ownerMerchant?.name && (
-                              <span className="text-gray-500 font-medium truncate max-w-[130px]">
-                                ({ownerMerchant.name})
-                              </span>
-                            )}
-                          </div>
+                  {/* Label */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">টাইপ</label>
+                    <select
+                      value={newNumLabel}
+                      onChange={(e) => setNewNumLabel(e.target.value as any)}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                    >
+                      <option value="Personal">Personal</option>
+                      <option value="Agent">Agent</option>
+                    </select>
+                  </div>
 
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-gray-500">
-                              <span>সীমা ব্যবহার</span>
-                              <span className={isExceeded ? 'text-red-600' : 'text-emerald-600'}>
-                                {Math.round((usedAmount / limit) * 100)}%
-                              </span>
+                  {/* Limit */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">ম্যাক্স লিমিট (BDT)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="50000"
+                      value={newNumLimit}
+                      onChange={(e) => setNewNumLimit(e.target.value)}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                    />
+                  </div>
+
+                  {/* Wallet Number Input */}
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">
+                      ওয়ালেট মোবাইল নম্বর (Wallet Number)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="যেমন: 017XXXXXXXX"
+                      value={newNumVal}
+                      onChange={(e) => setNewNumVal(e.target.value)}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="sm:col-span-2 lg:col-span-1 flex items-end">
+                    <button
+                      type="submit"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl transition shadow-md shadow-indigo-100 active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer h-[38px]"
+                    >
+                      <span>যোগ করুন</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Active Wallets List */}
+              <div className="space-y-3 pt-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-[11px] text-gray-500 uppercase tracking-widest px-1">
+                      আপনার সক্রিয় ওয়ালেট তালিকা (Your Active Wallets)
+                    </p>
+                  </div>
+                  <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <span>মার্চেন্ট:</span>
+                    <span className="font-mono font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                      {merchant.merchantId || 'M20241018'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Random Rotation Banner Notice */}
+                <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/80 rounded-xl flex items-center gap-2.5 text-indigo-900 text-xs">
+                  <Shuffle className="w-4 h-4 text-indigo-600 shrink-0 animate-pulse" />
+                  <p className="leading-snug">
+                    <strong>র‍্যান্ডম রোটেশন সক্রিয়:</strong> একই মেথডে (যেমন bKash) একাধিক নম্বর থাকলে ডিপোজিট বা পেমেন্ট পেজে গ্রাহকদের প্রতিবার স্বয়ংক্রিয়ভাবে একটি রেনডম নম্বর বরাদ্দ হবে।
+                  </p>
+                </div>
+
+                {/* Grid of Wallets */}
+                {myDepositNumbers.length === 0 ? (
+                  <div className="p-10 text-center text-gray-400 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-xs font-medium">
+                    আপনার মার্চেন্ট অ্যাকাউন্টে এখনও কোনো ওয়ালেট নম্বর যোগ করা নেই। উপরের ফর্ম থেকে নম্বর যোগ করুন।
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                    {myDepositNumbers.map((item, idx) => {
+                      const usedAmount = transactions
+                        .filter(t => t.walletNumber === item.number && (t.status === 'Success' || t.status === 'Pending'))
+                        .reduce((sum, t) => sum + t.amount, 0);
+                      const limit = item.limit || 50000;
+                      const isExceeded = usedAmount >= limit;
+
+                      return (
+                        <div key={item.id || idx} className="p-4 border border-gray-100 rounded-2xl bg-white hover:border-indigo-100 transition shadow-xs group">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-2 min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                                  item.method === 'bKash' ? 'bg-pink-100 text-pink-700' :
+                                  item.method === 'Nagad' ? 'bg-orange-100 text-orange-700' :
+                                  'bg-purple-100 text-purple-700'
+                                }`}>
+                                  {item.method}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                                  item.label === 'Personal' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
+                                }`}>
+                                  {item.label || 'Personal'}
+                                </span>
+                                <span className="font-mono font-bold text-gray-900 text-sm">{item.number}</span>
+                              </div>
+
+                              {/* Merchant Identifier Badge */}
+                              <div className="flex items-center gap-1.5 text-[11px]">
+                                <span className="text-gray-400 font-medium">মার্চেন্ট ID:</span>
+                                <span className="font-mono font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100">
+                                  {item.merchantId || merchant.merchantId || 'M20241018'}
+                                </span>
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[10px] font-bold text-gray-500">
+                                  <span>সীমা ব্যবহার</span>
+                                  <span className={isExceeded ? 'text-red-600' : 'text-emerald-600'}>
+                                    {Math.round((usedAmount / limit) * 100)}%
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full transition-all duration-500 ${isExceeded ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                    style={{ width: `${Math.min(100, (usedAmount / limit) * 100)}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-gray-400 font-medium">
+                                  ব্যবহৃত: <span className="text-gray-700 font-bold">৳{usedAmount.toLocaleString()}</span> / ৳{limit.toLocaleString()}
+                                </p>
+                              </div>
                             </div>
-                            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full transition-all duration-500 ${isExceeded ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                style={{ width: `${Math.min(100, (usedAmount / limit) * 100)}%` }}
-                              />
-                            </div>
-                            <p className="text-[10px] text-gray-400 font-medium">
-                              ব্যবহৃত: <span className="text-gray-700 font-bold">৳{usedAmount.toLocaleString()}</span> / ৳{limit.toLocaleString()}
-                            </p>
+
+                            <button
+                              type="button"
+                              title="মুছে ফেলুন"
+                              onClick={() => handleDeleteNumber(item)}
+                              className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition cursor-pointer shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-
-                        <button
-                          type="button"
-                          title="মুছে ফেলুন"
-                          onClick={() => handleDeleteNumber(item)}
-                          className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition cursor-pointer shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            );
-          })()}
+            </>
+          );
+        })()}
         </div>
-      </div>
+      )}
 
-      {/* List Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+      {/* Transactions & Approvals Section */}
+      {adminSection === 'transactions' && (
+        <>
+          {/* List Filters */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 -mx-1 px-1 custom-scrollbar">
           <button
             onClick={() => setFilterType('PendingDeposit')}
@@ -1820,6 +1913,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
