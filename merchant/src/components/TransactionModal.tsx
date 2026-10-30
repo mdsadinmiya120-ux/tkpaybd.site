@@ -5,9 +5,16 @@ import { Transaction } from '../types';
 interface TransactionModalProps {
   transaction: Transaction | null;
   onClose: () => void;
+  onApprove?: (txId: string) => void;
+  onReject?: (txId: string) => void;
 }
 
-export const TransactionModal: React.FC<TransactionModalProps> = ({ transaction, onClose }) => {
+export const TransactionModal: React.FC<TransactionModalProps> = ({ 
+  transaction, 
+  onClose,
+  onApprove,
+  onReject 
+}) => {
   const [copied, setCopied] = React.useState(false);
 
   if (!transaction) return null;
@@ -26,10 +33,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ transaction,
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100">
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition"
+          className="absolute top-4 right-4 p-2 rounded-xl text-gray-400 hover:bg-gray-100 transition cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -51,7 +58,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ transaction,
             <span className="text-gray-500 font-medium">Transaction ID</span>
             <div className="flex items-center gap-1.5 font-mono font-semibold text-gray-800">
               <span>{transaction.transactionId}</span>
-              <button onClick={handleCopy} className="text-gray-400 hover:text-emerald-600">
+              <button onClick={handleCopy} className="text-gray-400 hover:text-emerald-600 cursor-pointer">
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             </div>
@@ -63,8 +70,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ transaction,
           </div>
 
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-            <span className="text-gray-500 font-medium">Gateway Charge</span>
-            <span className="font-semibold text-gray-700">{formatBDT(transaction.charge)}</span>
+            <span className="text-gray-500 font-medium">
+              {isPayin ? 'কমিশন (Commission)' : 'সার্ভিস চার্জ (Charge)'}
+            </span>
+            <span className={`font-semibold ${isPayin ? 'text-emerald-600 font-bold' : 'text-gray-700'}`}>
+              {isPayin && transaction.charge > 0 ? `+${formatBDT(transaction.charge)}` : formatBDT(transaction.charge)}
+            </span>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
@@ -101,10 +112,42 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ transaction,
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-gray-100">
+        {/* Action Buttons if Pending */}
+        {transaction.status === 'Pending' && (
+          <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2.5">
+            {onApprove && (
+              <button
+                type="button"
+                onClick={() => {
+                  onApprove(transaction.transactionId);
+                  onClose();
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>অনুমোদন করুন</span>
+              </button>
+            )}
+            {onReject && (
+              <button
+                type="button"
+                onClick={() => {
+                  onReject(transaction.transactionId);
+                  onClose();
+                }}
+                className="bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+              >
+                <XCircle className="w-4 h-4 text-rose-500" />
+                <span>বাতিল করুন</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="mt-4 pt-3 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="w-full bg-gray-900 hover:bg-black text-white font-bold py-2.5 rounded-xl transition text-xs shadow-md"
+            className="w-full bg-gray-900 hover:bg-black text-white font-bold py-2.5 rounded-xl transition text-xs shadow-md cursor-pointer"
           >
             Close Details
           </button>

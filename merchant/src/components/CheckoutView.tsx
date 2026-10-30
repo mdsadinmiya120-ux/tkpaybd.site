@@ -1,5 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ArrowLeft, Send, Smartphone, Banknote, ShoppingBag, PlusCircle, Lightbulb, PiggyBank, HeartHandshake, Search, Shuffle } from 'lucide-react';
+import { 
+  Copy, 
+  Check, 
+  ArrowLeft, 
+  Smartphone, 
+  Banknote, 
+  ShoppingBag, 
+  PlusCircle, 
+  Lightbulb, 
+  PiggyBank, 
+  HeartHandshake, 
+  Search, 
+  X,
+  AlertTriangle,
+  ShieldCheck
+} from 'lucide-react';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
 import { getWalletDetailsForMethod, syncMerchantNumbersFromFirebase } from '../utils/wallet';
 
@@ -31,6 +46,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [inputError, setInputError] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Determine effective merchantId from prop, URL parameter, or existing transaction
   const effectiveMerchantId = React.useMemo(() => {
@@ -63,7 +79,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     return null;
   }, [transactionId]);
 
-  // Dynamic wallet info from merchant configured numbers (picks random if multiple exist)
+  // Dynamic wallet info from merchant configured numbers (picks random in background if multiple exist)
   const [walletInfo, setWalletInfo] = useState<{ number: string; label: 'Personal' | 'Agent'; count: number }>(() => 
     getWalletDetailsForMethod(method, effectiveMerchantId)
   );
@@ -79,7 +95,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     }
 
     const updateWallet = () => {
-      // REQUIREMENT: If multiple numbers exist for this method, picks one RANDOMLY
       setWalletInfo(getWalletDetailsForMethod(currentMethod, effectiveMerchantId));
     };
 
@@ -145,10 +160,46 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] flex flex-col items-center py-3 sm:py-6 px-2 sm:px-4 font-sans text-gray-800">
+    <div className="min-h-screen bg-[#f3f4f6] flex flex-col items-center py-3 sm:py-6 px-2 sm:px-4 font-sans text-gray-800 relative">
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-gray-100">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-gray-900 text-lg">পেমেন্ট বাতিল করতে চান?</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                আপনি যদি বাতিল করেন, এই পেমেন্ট সেশনটি বন্ধ হয়ে যাবে এবং আপনি ড্যাশবোর্ডে ফিরে যাবেন।
+              </p>
+            </div>
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  onBackToDashboard();
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition cursor-pointer active:scale-95 shadow-2xs"
+              >
+                হ্যাঁ, বাতিল করুন
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl text-xs transition cursor-pointer"
+              >
+                না, চালিয়ে যান
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200/90">
         
-        {/* Top Dark Green Banner matching exact screenshot header */}
+        {/* Top Dark Green Banner matching screenshot header with Cancel button */}
         <div className="bg-[#0e6d44] text-white px-5 py-4 flex items-center justify-between shadow-xs">
           <div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight">{formatAmount(amount)}</h2>
@@ -161,6 +212,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               <span className="bg-white text-[#0e6d44] px-1.5 py-0.5 rounded text-[10px] font-black">PAY</span>
               <span>SERVICE</span>
             </div>
+            
+            {/* Language Switch */}
             <div className="flex items-center bg-white/20 rounded-md p-0.5 text-[10px] font-bold">
               <button
                 type="button"
@@ -177,6 +230,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                 বাং
               </button>
             </div>
+
+            {/* Header Direct Cancel Button */}
+            <button
+              type="button"
+              onClick={() => setShowCancelModal(true)}
+              className="p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+              title="বাতিল করুন (Cancel)"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -221,47 +284,54 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         ) : (
           /* MAIN FORM SCREEN MATCHING EXACT SCREENSHOT */
           <div className="p-4 space-y-4">
-            {/* bKash / Payment Provider Header Banner */}
+            {/* Payment Provider Header Banner */}
             <div>
-              <div className={`p-4 rounded-2xl text-white font-bold flex items-center gap-3 shadow-md ${
+              <div className={`p-4 rounded-2xl text-white font-bold flex items-center justify-between shadow-md ${
                 isBkash 
                   ? 'bg-[#c20058]' :
                 isNagad 
                   ? 'bg-gradient-to-r from-[#ea580c] to-[#f97316]' :
                   'bg-gradient-to-r from-purple-700 to-indigo-800'
               }`}>
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-0.5 shadow-inner shrink-0 overflow-hidden">
-                  {isBkash ? (
-                    <img 
-                      src={BKASH_LOGO_URL} 
-                      alt="bKash" 
-                      className="w-full h-full object-cover" 
-                    />
-                  ) : isNagad ? (
-                    <img 
-                      src={NAGAD_LOGO_URL} 
-                      alt="Nagad" 
-                      className="w-8 h-8 object-contain" 
-                    />
-                  ) : isRocket ? (
-                    <img 
-                      src={ROCKET_LOGO_URL} 
-                      alt="Rocket" 
-                      className="w-full h-full object-contain" 
-                    />
-                  ) : (
-                    <span className="font-extrabold text-sm text-[#ea580c]">
-                      {currentMethod}
-                    </span>
-                  )}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-0.5 shadow-inner shrink-0 overflow-hidden">
+                    {isBkash ? (
+                      <img 
+                        src={BKASH_LOGO_URL} 
+                        alt="bKash" 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : isNagad ? (
+                      <img 
+                        src={NAGAD_LOGO_URL} 
+                        alt="Nagad" 
+                        className="w-8 h-8 object-contain" 
+                      />
+                    ) : isRocket ? (
+                      <img 
+                        src={ROCKET_LOGO_URL} 
+                        alt="Rocket" 
+                        className="w-full h-full object-contain" 
+                      />
+                    ) : (
+                      <span className="font-extrabold text-sm text-[#ea580c]">
+                        {currentMethod}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-base sm:text-lg font-black tracking-wide uppercase">
+                    {currentMethod} Deposit
+                  </span>
                 </div>
-                <span className="text-base sm:text-lg font-black tracking-wide uppercase">
-                  {currentMethod} Deposit
-                </span>
+
+                <div className="flex items-center gap-1 text-[11px] bg-white/20 px-2 py-0.5 rounded-lg">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Verified</span>
+                </div>
               </div>
             </div>
 
-            {/* Wallet No Section matching screenshot */}
+            {/* Wallet No Section - Clean and without internal rotation debug text */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-gray-900 text-sm sm:text-base">
@@ -273,12 +343,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                     {walletInfo.label}
                   </span>
                 </div>
-                {walletInfo.count > 1 && (
-                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md flex items-center gap-1 border border-indigo-100" title="একাধিক নাম্বার থেকে স্বয়ংক্রিয়ভাবে র‍্যান্ডম নির্বাচিত">
-                    <Shuffle className="w-3 h-3 text-indigo-500" />
-                    <span>র‍্যান্ডম ({walletInfo.count}টি নাম্বার)</span>
-                  </span>
-                )}
               </div>
               
               <p className="text-xs sm:text-[13px] text-gray-800 leading-snug font-normal">
@@ -314,11 +378,17 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               <div className="grid grid-cols-4 gap-2 text-center text-[10px] sm:text-[11px]">
                 
                 {/* 1. সেন্ড মানি */}
-                <div className="p-1.5 flex flex-col items-center justify-center opacity-80">
+                <div className={`p-1.5 flex flex-col items-center justify-center rounded-2xl ${
+                  walletInfo.label === 'Personal' 
+                    ? 'border-2 border-red-500 bg-red-50/50 shadow-xs' 
+                    : 'opacity-80'
+                }`}>
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-pink-50 border border-pink-100 text-pink-600 flex items-center justify-center mb-1 font-bold text-xs">
                     ৳
                   </div>
-                  <span className="text-gray-600 font-medium">সেন্ড মানি</span>
+                  <span className={`${walletInfo.label === 'Personal' ? 'text-gray-900 font-black' : 'text-gray-600 font-medium'}`}>
+                    সেন্ড মানি
+                  </span>
                 </div>
 
                 {/* 2. মোবাইল রিচার্জ */}
@@ -329,12 +399,18 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                   <span className="text-gray-600 font-medium">মোবাইল রিচার্জ</span>
                 </div>
 
-                {/* 3. ক্যাশ আউট (HIGHLIGHTED WITH RED BORDER BOX IN SCREENSHOT) */}
-                <div className="p-1 flex flex-col items-center justify-center border-2 border-red-500 bg-red-50/50 rounded-2xl shadow-xs relative">
+                {/* 3. ক্যাশ আউট (HIGHLIGHTED WITH RED BORDER BOX WHEN AGENT) */}
+                <div className={`p-1 flex flex-col items-center justify-center rounded-2xl ${
+                  walletInfo.label === 'Agent' 
+                    ? 'border-2 border-red-500 bg-red-50/50 shadow-xs' 
+                    : 'opacity-80'
+                }`}>
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-teal-500 text-white flex items-center justify-center mb-1 shadow-2xs">
                     <Banknote className="w-5 h-5" />
                   </div>
-                  <span className="text-gray-900 font-black text-[10px] sm:text-[11px]">ক্যাশ আউট</span>
+                  <span className={`${walletInfo.label === 'Agent' ? 'text-gray-900 font-black' : 'text-gray-600 font-medium'} text-[10px] sm:text-[11px]`}>
+                    ক্যাশ আউট
+                  </span>
                 </div>
 
                 {/* 4. পেমেন্ট */}
@@ -388,8 +464,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               </div>
             </div>
 
-            {/* TrxID Input Form matching screenshot */}
-            <form onSubmit={handleConfirm} className="space-y-3 pt-1">
+            {/* TrxID Input Form */}
+            <form onSubmit={handleConfirm} className="space-y-3.5 pt-1">
               <div>
                 <label className="block text-xs sm:text-sm font-black text-gray-900 mb-1.5">
                   {walletInfo.label === 'Agent' ? 'ক্যাশআউটের' : 'সেন্ড মানির'} TrxID নাম্বারটি লিখুন <span className="text-red-600 font-extrabold">(প্রয়োজন)</span>
@@ -399,34 +475,43 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                   required
                   value={trxId}
                   onChange={(e) => {
-                    setTrxId(e.target.value);
+                    setTrxId(e.target.value.toUpperCase());
                     setInputError('');
                   }}
                   placeholder="TrxID অবশ্যই পূরণ করতে হবে!"
-                  className={`w-full border-2 ${inputError ? 'border-red-600 ring-2 ring-red-200' : 'border-red-500'} rounded-2xl px-4 py-3 sm:py-3.5 text-xs sm:text-sm text-gray-900 font-mono font-bold placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 bg-[#f9fafb] text-center sm:text-left shadow-2xs uppercase`}
+                  className={`w-full border-2 ${inputError ? 'border-red-600 ring-2 ring-red-200' : 'border-red-500'} rounded-2xl px-4 py-3 sm:py-3.5 text-xs sm:text-sm text-gray-900 font-mono font-bold placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-red-500 bg-[#f9fafb] text-center sm:text-left shadow-2xs uppercase tracking-wider`}
                 />
                 {inputError && (
                   <p className="mt-1 text-xs text-red-600 font-bold">{inputError}</p>
                 )}
               </div>
 
-              {/* নিশ্চিত (Confirm) Button */}
-              <div className="pt-1">
+              {/* Action Buttons: Confirm & Cancel */}
+              <div className="pt-1 space-y-2">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full max-w-xs mx-auto block bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-800 font-bold py-2.5 px-8 rounded-xl text-xs sm:text-sm transition shadow-2xs disabled:opacity-50 cursor-pointer"
+                  className="w-full max-w-xs mx-auto block bg-[#0e6d44] hover:bg-[#0b5837] text-white font-black py-3 px-8 rounded-2xl text-xs sm:text-sm transition shadow-md disabled:opacity-50 cursor-pointer active:scale-98"
                 >
-                  {submitting ? 'যাচাই করা হচ্ছে...' : 'নিশ্চিত'}
+                  {submitting ? 'যাচাই করা হচ্ছে...' : '✓ নিশ্চিত (Confirm Payment)'}
+                </button>
+
+                {/* Clear Cancel Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(true)}
+                  className="w-full max-w-xs mx-auto block bg-white hover:bg-red-50 text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 font-bold py-2.5 px-8 rounded-2xl text-xs transition cursor-pointer active:scale-95"
+                >
+                  ✕ পেমেন্ট বাতিল করুন (Cancel Payment)
                 </button>
               </div>
             </form>
 
-            {/* Footer warning matching screenshot */}
+            {/* Footer warning */}
             <div className="space-y-1 text-[11px] text-gray-500 pt-2 border-t border-gray-100">
               <p className="font-bold text-gray-800">সতর্কতাঃ</p>
               <p className="text-gray-500 leading-relaxed">
-                লেনদেন আইডি সঠিকভাবে পূরণ করতে হবে। এডমিন প্যানেলে কাস্টম নাম্বার সেটিং থেকে যে নম্বর সেট করা থাকবে গ্রাহকরা এখানে কেবল সেই নম্বর দেখতে পাবে।
+                লেনদেন আইডি সঠিকভাবে পূরণ করতে হবে। ভুল তথ্য দিলে পেমেন্ট এপ্রুভ হতে দেরি হতে পারে।
               </p>
             </div>
 
@@ -434,10 +519,10 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
             <div className="pt-1">
               <button
                 type="button"
-                onClick={onBackToDashboard}
+                onClick={() => setShowCancelModal(true)}
                 className="w-full flex items-center justify-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 py-1.5 transition cursor-pointer"
               >
-                <ArrowLeft className="w-3.5 h-3.5" /> ড্যাশবোর্ডে ফিরে যান
+                <ArrowLeft className="w-3.5 h-3.5" /> ড্যাশবোর্ডে ফিরে যান (Return to Dashboard)
               </button>
             </div>
 

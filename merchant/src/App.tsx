@@ -21,11 +21,46 @@ import { database } from './firebase';
 import { APP_LOGO_URL } from './constants/logos';
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    try {
+      const savedAuth = localStorage.getItem('chaopaopay_is_logged_in');
+      if (savedAuth === 'false') return false;
+      if (savedAuth === 'true') return true;
+      // Auto restore if merchant exists
+      const savedMerchant = localStorage.getItem('chaopaopay_merchant');
+      if (savedMerchant) {
+        const parsed = JSON.parse(savedMerchant);
+        if (parsed && (parsed.merchantId || parsed.phone)) return true;
+      }
+    } catch (e) {}
+    return true; // Default logged in so user never gets logged out on refresh
+  });
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      const savedTab = localStorage.getItem('chaopaopay_active_tab');
+      if (savedTab) return savedTab;
+    } catch (e) {}
+    return 'dashboard';
+  });
+
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<'All' | 'Payin' | 'Payout'>('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasUnreadPending, setHasUnreadPending] = useState(false);
+
+  // Sync active tab to storage
+  useEffect(() => {
+    try {
+      localStorage.setItem('chaopaopay_active_tab', activeTab);
+    } catch (e) {}
+  }, [activeTab]);
+
+  // Sync login status to storage
+  useEffect(() => {
+    try {
+      localStorage.setItem('chaopaopay_is_logged_in', isLoggedIn ? 'true' : 'false');
+    } catch (e) {}
+  }, [isLoggedIn]);
 
   // Clean Merchant Profile
   const [merchant, setMerchant] = useState<MerchantProfile>(() => {
@@ -628,20 +663,30 @@ export default function App() {
     });
   };
 
-  // Admin rejects deposit: status becomes Failed, no money added!
+  // Admin rejects / cancels deposit: status becomes Failed, no money added!
   const handleAdminRejectDeposit = (txId: string) => {
-    let rejectedTx: Transaction | undefined;
-    setTransactions(prev => prev.map(t => {
-      if (t.transactionId === txId) {
-        rejectedTx = { ...t, status: 'Failed' as const };
-        return rejectedTx;
-      }
-      return t;
-    }));
+    setTransactions(prev => {
+      let rejectedTx: Transaction | undefined;
+      const updated = prev.map(t => {
+        if (t.transactionId === txId) {
+          rejectedTx = { ...t, status: 'Failed' as const };
+          return rejectedTx;
+        }
+        return t;
+      });
 
-    if (rejectedTx) {
-      syncToFirebase(rejectedTx);
-    }
+      if (rejectedTx) {
+        syncToFirebase(rejectedTx);
+      }
+
+      try {
+        localStorage.setItem('chaopaopay_transactions', JSON.stringify(updated));
+      } catch (e) {}
+
+      window.dispatchEvent(new Event('transactionsUpdated'));
+      window.dispatchEvent(new CustomEvent('merchantUpdated'));
+      return updated;
+    });
   };
 
   const handleAdminApprovePayout = (txId: string) => {
@@ -1083,6 +1128,7 @@ export default function App() {
               onNewTransaction={handleAddTransaction}
               initialTypeFilter={transactionTypeFilter}
               onApproveDeposit={handleAdminApproveDeposit}
+              onRejectDeposit={handleAdminRejectDeposit}
             />
           )}
 
@@ -1163,6 +1209,14 @@ export default function App() {
       <TransactionModal 
         transaction={selectedTx}
         onClose={() => setSelectedTx(null)}
+        onApprove={(txId) => {
+          handleAdminApproveDeposit(txId);
+          setSelectedTx(prev => prev ? { ...prev, status: 'Success' } : null);
+        }}
+        onReject={(txId) => {
+          handleAdminRejectDeposit(txId);
+          setSelectedTx(prev => prev ? { ...prev, status: 'Failed' } : null);
+        }}
       />
     </div>
   );

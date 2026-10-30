@@ -8,13 +8,15 @@ interface TransactionsTabProps {
   onNewTransaction?: (tx: Transaction) => void;
   initialTypeFilter?: 'All' | 'Payin' | 'Payout';
   onApproveDeposit?: (txId: string) => void;
+  onRejectDeposit?: (txId: string) => void;
 }
 
 export const TransactionsTab: React.FC<TransactionsTabProps> = ({ 
   transactions, 
   onSelectTransaction,
   initialTypeFilter = 'All',
-  onApproveDeposit
+  onApproveDeposit,
+  onRejectDeposit
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'All' | 'Payin' | 'Payout'>(initialTypeFilter);
@@ -149,7 +151,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                         {new Date(tx.createdAt).toLocaleString()}
                       </td>
                       <td className="py-2.5 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5">
                           <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             tx.status === 'Success' ? 'bg-emerald-100 text-emerald-800' :
                             tx.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
@@ -158,17 +160,29 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             {tx.status}
                           </span>
 
-                          {tx.status === 'Pending' && tx.type === 'Payin' && onApproveDeposit && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onApproveDeposit(tx.transactionId);
-                              }}
-                              className="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[9px] font-bold shadow-2xs transition cursor-pointer"
-                            >
-                              Approve
-                            </button>
+                          {tx.status === 'Pending' && (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              {onApproveDeposit && (
+                                <button
+                                  type="button"
+                                  onClick={() => onApproveDeposit(tx.transactionId)}
+                                  className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs transition active:scale-95 cursor-pointer"
+                                  title="অনুমোদন করুন"
+                                >
+                                  অনুমোদন
+                                </button>
+                              )}
+                              {onRejectDeposit && (
+                                <button
+                                  type="button"
+                                  onClick={() => onRejectDeposit(tx.transactionId)}
+                                  className="px-2 py-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300 font-bold text-[10px] shadow-2xs transition active:scale-95 cursor-pointer"
+                                  title="বাতিল করুন"
+                                >
+                                  বাতিল
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </td>

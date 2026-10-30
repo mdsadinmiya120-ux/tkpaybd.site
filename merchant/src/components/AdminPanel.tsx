@@ -20,7 +20,14 @@ import {
   Eye,
   Shuffle,
   Wallet,
-  CreditCard
+  CreditCard,
+  Sparkles,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Phone,
+  Shield,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
 import { Transaction, MerchantProfile, VerificationRequest, DepositWalletNumber } from '../types';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
@@ -714,10 +721,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [depositNumbers, setDepositNumbers] = useState<DepositWalletNumber[]>(() => {
     return getAllDepositNumbers();
   });
+  const currentMId = (merchant.merchantId || 'M20241018').trim();
+  const myDepositNumbers = depositNumbers.filter(
+    n => (n.merchantId || '').trim().toLowerCase() === currentMId.toLowerCase()
+  );
   const [newNumMethod, setNewNumMethod] = useState<'bKash' | 'Nagad' | 'Rocket'>('bKash');
   const [newNumVal, setNewNumVal] = useState('');
   const [newNumLimit, setNewNumLimit] = useState('50000');
   const [newNumLabel, setNewNumLabel] = useState<'Personal' | 'Agent'>('Personal');
+  const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
+
+  const handleCopyText = (text: string) => {
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedNumber(text);
+      setTimeout(() => setCopiedNumber(null), 2000);
+    } catch (e) {}
+  };
 
   useEffect(() => {
     const refresh = () => setDepositNumbers(getAllDepositNumbers());
@@ -793,90 +813,127 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <div className="space-y-3 sm:space-y-4 pb-16">
-      {/* Top Header Card */}
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm border border-gray-100">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="p-1.5 bg-indigo-50 text-indigo-700 rounded-lg">
-                <ShieldCheck className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+      {/* Top Executive Header Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 sm:p-6 text-white shadow-xl border border-slate-800/80">
+        {/* Subtle decorative glow accents */}
+        <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{isSuperAdmin ? 'Super Admin System' : 'Merchant Control Hub'}</span>
               </span>
-              <h2 className="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight">
-                {isSuperAdmin ? 'Admin Control Center' : 'Merchant Dashboard Control'}
-              </h2>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Live Gateway</span>
+              </span>
             </div>
-            <p className="text-[10px] text-gray-500 font-medium">
-              {isSuperAdmin ? 'Global system management and approval portal.' : 'Manage your gateway deposits and withdrawals.'}
+
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+                {isSuperAdmin ? 'কন্ট্রোল ও ম্যানেজমেন্ট সেন্টার' : 'মার্চেন্ট ড্যাশবোর্ড কন্ট্রোল'}
+              </h2>
+              <span className="text-xs font-mono font-bold text-indigo-300 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60">
+                {merchant.merchantId || 'M20241018'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-medium">
+              {isSuperAdmin 
+                ? 'সিস্টেমের ডিপোজিট নম্বর, লেনদেন অনুমোদন ও মার্চেন্ট অ্যাকাউন্ট পরিচালনা পোর্টাল' 
+                : 'আপনার গেটওয়ে ডিপোজিট নম্বর ও লেনদেন রিকোয়েস্ট পর্যবেক্ষণ করুন'}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 w-full lg:w-auto">
+          {/* Quick Stat Tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full lg:w-auto">
             <button 
               type="button"
               onClick={() => { setAdminSection('transactions'); setFilterType('PendingDeposit'); }}
-              className="bg-amber-50/50 hover:bg-amber-100/60 transition border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+              className={`p-3 rounded-2xl border transition-all text-left group cursor-pointer ${
+                pendingDeposits.length > 0 
+                  ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 hover:border-amber-500/50' 
+                  : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-800 hover:border-slate-600'
+              }`}
             >
-              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5 group-hover:text-amber-800">Pending Deposits</p>
-              <p className="text-base font-black text-amber-900">{pendingDeposits.length}</p>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-black uppercase tracking-wider text-amber-400">ডিপোজিট পেন্ডিং</span>
+                {pendingDeposits.length > 0 && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />}
+              </div>
+              <p className="text-xl font-black text-amber-300">{pendingDeposits.length}</p>
             </button>
+
             <button 
               type="button"
               onClick={() => { setAdminSection('transactions'); setFilterType('PendingWithdrawal'); }}
-              className="bg-amber-50/50 hover:bg-amber-100/60 transition border border-amber-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+              className={`p-3 rounded-2xl border transition-all text-left group cursor-pointer ${
+                pendingWithdrawals.length > 0 
+                  ? 'bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50' 
+                  : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-800 hover:border-slate-600'
+              }`}
             >
-              <p className="text-[8px] font-bold text-amber-700 uppercase tracking-wider mb-0.5 group-hover:text-amber-800">Pending Payouts</p>
-              <p className="text-base font-black text-amber-900">{pendingWithdrawals.length}</p>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-black uppercase tracking-wider text-orange-400">উত্তোলন পেন্ডিং</span>
+                {pendingWithdrawals.length > 0 && <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping" />}
+              </div>
+              <p className="text-xl font-black text-orange-300">{pendingWithdrawals.length}</p>
             </button>
+
             <button 
               type="button"
               onClick={() => setAdminSection('verifications')}
-              className="bg-purple-50/50 hover:bg-purple-100/60 transition border border-purple-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+              className="p-3 rounded-2xl bg-slate-800/60 border border-slate-700/60 hover:bg-slate-800 hover:border-purple-500/50 transition-all text-left group cursor-pointer"
             >
-              <p className="text-[8px] font-bold text-purple-700 uppercase tracking-wider mb-0.5 group-hover:text-purple-800">Verifications</p>
-              <p className="text-base font-black text-purple-900">
+              <span className="text-[9px] font-black uppercase tracking-wider text-purple-400 block mb-1">পার্টনার আবেদন</span>
+              <p className="text-xl font-black text-purple-300">
                 {displayVerificationRequests.filter(r => r.status === 'Pending').length}
               </p>
             </button>
+
             <button 
               type="button"
               onClick={() => setAdminSection('wallets')}
-              className="bg-emerald-50/50 hover:bg-emerald-100/60 transition border border-emerald-100 p-2 sm:p-2.5 rounded-2xl text-center cursor-pointer group"
+              className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 hover:bg-emerald-900/30 hover:border-emerald-500/60 transition-all text-left group cursor-pointer"
             >
-              <p className="text-[8px] font-bold text-emerald-700 uppercase tracking-wider mb-0.5 group-hover:text-emerald-800">System Balance</p>
-              <p className="text-[11px] font-black text-emerald-900 truncate px-1">{formatBDT(merchant.balance)}</p>
+              <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 block mb-1">সিস্টেম ব্যালেন্স</span>
+              <p className="text-sm sm:text-base font-black text-emerald-300 truncate">
+                {formatBDT(merchant.balance)}
+              </p>
             </button>
           </div>
         </div>
 
         {feedbackMsg && (
-          <div className={`mt-3 p-2.5 rounded-2xl text-[11px] font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${
+          <div className={`mt-4 p-3 rounded-2xl text-xs font-bold flex items-center gap-2.5 animate-in slide-in-from-top-2 duration-200 border backdrop-blur-md ${
             feedbackMsg.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs' 
-              : 'bg-red-50 text-red-800 border border-red-200 shadow-xs'
+              ? 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40' 
+              : 'bg-rose-500/15 text-rose-200 border-rose-500/40'
           }`}>
-            {feedbackMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
-            <span className="leading-tight">{feedbackMsg.text}</span>
+            {feedbackMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <XCircle className="w-4 h-4 text-rose-400 shrink-0" />}
+            <span className="leading-snug">{feedbackMsg.text}</span>
           </div>
         )}
       </div>
 
-      {/* Admin Section Tabs Navigation */}
-      <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
+      {/* Admin Section Tabs Navigation Bar */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-1.5 sm:p-2 shadow-sm border border-gray-200/80 flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
         <button
           type="button"
           onClick={() => setAdminSection('wallets')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
             adminSection === 'wallets'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
           }`}
         >
           <Wallet className="w-4 h-4" />
           <span>ডিপোজিট নম্বর সেটিংস</span>
           <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
-            adminSection === 'wallets' ? 'bg-indigo-700 text-indigo-100' : 'bg-gray-100 text-gray-600'
+            adminSection === 'wallets' ? 'bg-indigo-700/80 text-white' : 'bg-gray-100 text-gray-700'
           }`}>
-            {depositNumbers.length}
+            {myDepositNumbers.length}
           </span>
         </button>
 
@@ -885,8 +942,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onClick={() => setAdminSection('transactions')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
             adminSection === 'transactions'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
           }`}
         >
           <CreditCard className="w-4 h-4" />
@@ -904,14 +961,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onClick={() => setAdminSection('accounts')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
               adminSection === 'accounts'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
             }`}
           >
             <Users className="w-4 h-4" />
             <span>মার্চেন্ট অ্যাকাউন্ট তালিকা</span>
             <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${
-              adminSection === 'accounts' ? 'bg-indigo-700 text-indigo-100' : 'bg-gray-100 text-gray-600'
+              adminSection === 'accounts' ? 'bg-indigo-700/80 text-white' : 'bg-gray-100 text-gray-700'
             }`}>
               {allAccounts.length}
             </span>
@@ -924,8 +981,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onClick={() => setAdminSection('verifications')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 ${
               adminSection === 'verifications'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -942,110 +999,123 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {isSuperAdmin && adminSection === 'verifications' && (
         <>
           {/* Verification & Partner Requests (Pending Submissions) */}
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-4">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-200/80 space-y-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-2xs">
+            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-xs">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-gray-900 text-sm sm:text-base flex items-center gap-2">
-                <span>পার্টনার অ্যাপ্রুভাল (Partner Approvals)</span>
+              <h3 className="font-extrabold text-gray-900 text-base sm:text-lg flex items-center gap-2">
+                <span>পার্টনার আবেদন ও ভেরিফিকেশন (Partner Verification)</span>
                 {displayVerificationRequests.filter(r => r.status === 'Pending').length > 0 && (
-                  <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                  <span className="bg-rose-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full animate-pulse shadow-xs">
                     {displayVerificationRequests.filter(r => r.status === 'Pending').length} Pending
                   </span>
                 )}
               </h3>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                মার্চেন্ট কর্তৃক সাবমিট করা রেন্ডি কার্ড (Partner Card) ও এনআইডি ভেরিফিকেশন আবেদন তথ্য
+              <p className="text-xs text-gray-500 mt-0.5">
+                মার্চেন্ট কর্তৃক জমা দেওয়া রেন্ডি কার্ড (Partner Card) ও এনআইডি ভেরিফিকেশন আবেদন পর্যালোচনা করুন
               </p>
             </div>
           </div>
-          <span className="text-[10px] font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200/60">
-            মোট রিকোয়েস্ট: {displayVerificationRequests.length}
+          <span className="text-xs font-black text-purple-700 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100">
+            মোট রিকোয়েস্ট: {displayVerificationRequests.length}টি
           </span>
         </div>
 
         {displayVerificationRequests.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 font-medium italic text-xs bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-            এখনও কোনো ভেরিফিকেশন রিকোয়েস্ট জমা পড়েনি। মার্চেন্ট ইন-এক্টিভ পেজ থেকে সাবমিট করলে এখানে দেখতে পাবেন।
+          <div className="p-12 text-center text-gray-400 font-medium italic text-xs bg-slate-50/50 rounded-2xl border border-dashed border-gray-200 space-y-1.5">
+            <Shield className="w-8 h-8 text-gray-300 mx-auto" />
+            <p className="font-bold text-gray-600">এখনও কোনো ভেরিফিকেশন রিকোয়েস্ট জমা পড়েনি</p>
+            <p className="text-[11px] text-gray-400">মার্চেন্ট ইন-অ্যাক্টিভ পেজ থেকে আবেদন সাবমিট করলে এখানে রিয়েল-টাইমে দেখতে পাবেন।</p>
           </div>
         ) : (
-          <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+          <div className="space-y-3.5 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
             {displayVerificationRequests.map((req) => {
               const isPending = req.status === 'Pending';
               return (
                 <div 
                   key={req.id} 
-                  className={`p-4 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                     isPending 
-                      ? 'bg-amber-50/40 border-amber-200 shadow-xs' 
+                      ? 'bg-amber-50/40 border-amber-200/80 shadow-xs hover:border-amber-300' 
                       : req.status === 'Approved'
-                      ? 'bg-emerald-50/20 border-emerald-100'
+                      ? 'bg-emerald-50/20 border-emerald-100/90'
                       : 'bg-gray-50/60 border-gray-100'
                   }`}
                 >
-                  <div className="space-y-2 flex-1 min-w-0">
+                  <div className="space-y-2.5 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-black text-gray-900 text-xs bg-white px-2 py-0.5 rounded-lg border border-gray-200">
+                      <span className="font-mono font-black text-gray-900 text-xs bg-white px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs">
                         {req.merchantId}
                       </span>
-                      <span className="font-bold text-gray-800 text-xs sm:text-sm">
+                      <span className="font-black text-gray-900 text-sm">
                         {req.merchantName}
                       </span>
                       <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tight ${
                         req.type === 'GATEWAY_1350' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-purple-100 text-purple-800'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                          : 'bg-purple-100 text-purple-800 border border-purple-200'
                       }`}>
                         {req.type === 'GATEWAY_1350' ? 'Gateway 1350 BDT' : 'Rendy Card (Partner)'}
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black flex items-center gap-1 ${
                         isPending 
-                          ? 'bg-amber-100 text-amber-800 animate-pulse' 
+                          ? 'bg-amber-100 text-amber-800 animate-pulse border border-amber-200' 
                           : req.status === 'Approved'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : 'bg-red-100 text-red-800 border border-red-200'
                       }`}>
-                        {req.status}
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          isPending ? 'bg-amber-500' : req.status === 'Approved' ? 'bg-emerald-500' : 'bg-red-500'
+                        }`} />
+                        <span>{req.status}</span>
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-[11px] text-gray-600">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-gray-600 bg-white/70 p-3 rounded-xl border border-gray-100">
                       {req.phone && (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-gray-400">📞 Phone:</span>
+                          <span className="text-gray-400 font-semibold">📞 ফোন:</span>
                           <span className="font-mono font-bold text-gray-900">{req.phone}</span>
                         </div>
                       )}
                       {req.trxId && (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-gray-400">💳 TrxID:</span>
-                          <span className="font-mono font-black text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-100 select-all">
+                          <span className="text-gray-400 font-semibold">💳 TrxID:</span>
+                          <span className="font-mono font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 select-all">
                             {req.trxId}
                           </span>
                         </div>
                       )}
                       {req.amount && (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-gray-400">💰 Fee:</span>
+                          <span className="text-gray-400 font-semibold">💰 ফি:</span>
                           <span className="font-black text-emerald-700">{req.amount} {req.currency || 'BDT'}</span>
                         </div>
                       )}
                       {req.nidNumber && (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-gray-400">🆔 NID:</span>
-                          <span className="font-mono text-gray-800">{req.nidNumber}</span>
+                          <span className="text-gray-400 font-semibold">🆔 NID:</span>
+                          <span className="font-mono font-bold text-gray-800">{req.nidNumber}</span>
                         </div>
                       )}
                       {req.whatsapp && (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-gray-400">💬 WhatsApp:</span>
-                          <span className="text-gray-800">{req.whatsapp}</span>
+                          <span className="text-gray-400 font-semibold">💬 WhatsApp:</span>
+                          <a 
+                            href={`https://wa.me/${req.whatsapp.replace(/[^0-9]/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-emerald-700 hover:underline font-bold flex items-center gap-1"
+                          >
+                            <span>{req.whatsapp}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
                         </div>
                       )}
-                      <div className="flex items-center gap-1.5 text-gray-400">
+                      <div className="flex items-center gap-1.5 text-gray-400 text-[11px]">
                         <span>🕒 {new Date(req.submittedAt).toLocaleString()}</span>
                       </div>
                     </div>
@@ -1057,27 +1127,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <button
                           type="button"
                           onClick={() => handleApproveVerification(req)}
-                          className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                          className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
                         >
-                          <Check className="w-3.5 h-3.5" />
+                          <Check className="w-4 h-4" />
                           <span>অনুমোদন ও এক্টিভ করুন</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRejectVerification(req)}
-                          className="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-2 rounded-xl text-xs transition border border-red-200 cursor-pointer"
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3.5 py-2.5 rounded-xl text-xs transition border border-rose-200 cursor-pointer active:scale-95"
                         >
                           বাতিল
                         </button>
                       </>
                     ) : req.status === 'Approved' ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-700 text-xs font-bold bg-emerald-100/70 px-3 py-1.5 rounded-xl">
-                        <CheckCircle2 className="w-4 h-4" />
+                      <span className="inline-flex items-center gap-1.5 text-emerald-700 text-xs font-bold bg-emerald-100/70 border border-emerald-200 px-3.5 py-2 rounded-xl">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                         <span>সক্রিয় অনুমোদিত</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-red-700 text-xs font-bold bg-red-100/70 px-3 py-1.5 rounded-xl">
-                        <XCircle className="w-4 h-4" />
+                      <span className="inline-flex items-center gap-1.5 text-red-700 text-xs font-bold bg-red-100/70 border border-red-200 px-3.5 py-2 rounded-xl">
+                        <XCircle className="w-4 h-4 text-red-600" />
                         <span>বাতিলকৃত</span>
                       </span>
                     )}
@@ -1092,28 +1162,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Master Admin: Account Control */}
       {isSuperAdmin && adminSection === 'accounts' && (
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-50 pb-4">
-            <div>
-              <h3 className="font-extrabold text-gray-900 text-sm sm:text-base flex items-center gap-2">
-                <Users className="w-4.5 h-4.5 text-indigo-600" />
-                <span>Account Management</span>
-              </h3>
-              <p className="text-[11px] text-gray-500 mt-0.5">Control partner agent access and status.</p>
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-200/80 space-y-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-gray-900 text-base sm:text-lg">
+                  মার্চেন্ট অ্যাকাউন্ট তালিকা ও পারমিশন (Merchant Directory)
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">সকল মার্চেন্টের স্ট্যাটাস, কমিশন ও গেটওয়ে সুবিধা নিয়ন্ত্রণ করুন</p>
+              </div>
             </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
               <input
                 type="text"
-                placeholder="ID, Name, or Phone..."
+                placeholder="ID, নাম, ফোন বা ইমেইল খুঁজুন..."
                 value={accountSearch}
                 onChange={(e) => setAccountSearch(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-indigo-600 focus:bg-white font-medium transition"
+                className="w-full bg-slate-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white font-medium transition shadow-2xs"
               />
             </div>
           </div>
 
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+          <div className="space-y-3.5 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
             {allAccounts.filter(acc => {
               if (!accountSearch.trim()) return true;
               const term = accountSearch.toLowerCase();
@@ -1124,8 +1198,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 (acc.email && acc.email.toLowerCase().includes(term))
               );
             }).length === 0 ? (
-              <div className="p-10 text-center text-gray-400 font-medium italic text-xs">
-                No accounts found matching your search.
+              <div className="p-12 text-center text-gray-400 font-medium italic text-xs bg-slate-50/50 rounded-2xl border border-dashed border-gray-200 space-y-1.5">
+                <Users className="w-8 h-8 text-gray-300 mx-auto" />
+                <p className="font-bold text-gray-600">কোনো মার্চেন্ট অ্যাকাউন্ট পাওয়া যায়নি</p>
+                <p className="text-[11px] text-gray-400">অন্য কোনো নাম বা মার্চেন্ট আইডি দিয়ে অনুসন্ধান করুন।</p>
               </div>
             ) : (
               allAccounts
@@ -1144,39 +1220,39 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   const isActive = evaluateAccountActive(acc, isMaster);
 
                   return (
-                    <div key={acc.merchantId} className="p-4 border border-gray-100 rounded-2xl bg-white hover:border-indigo-100 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-                      <div className="space-y-2 flex-1 min-w-0">
+                    <div key={acc.merchantId} className="p-4 sm:p-5 border border-gray-200/90 rounded-2xl bg-white hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-2.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-black text-gray-900 text-xs sm:text-sm bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-200">
+                          <span className="font-mono font-black text-gray-900 text-xs sm:text-sm bg-slate-100 px-2.5 py-1 rounded-lg border border-gray-200">
                             {acc.merchantId}
                           </span>
-                          <span className="font-bold text-gray-800 truncate max-w-[130px] sm:max-w-none">
+                          <span className="font-black text-gray-900 text-sm truncate max-w-[150px] sm:max-w-none">
                             {acc.name || 'Merchant'}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${
-                            isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tight flex items-center gap-1 ${
+                            isActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                             {isActive ? 'Active' : 'Inactive'}
                           </span>
                           {(acc.merchantId === 'S01926516246' || acc.merchantId === 'M20241018') && (
-                            <span className="text-[9px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100">
-                              Admin Tag
+                            <span className="text-[9px] font-black bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100 uppercase tracking-wider">
+                              Admin Master
                             </span>
                           )}
                         </div>
-                        <div className="grid grid-cols-2 sm:flex sm:items-center gap-y-1 gap-x-4 text-[10px] sm:text-[11px] text-gray-500 font-medium">
-                          <span className="truncate">📞 <span className="text-gray-700">{acc.phone || 'N/A'}</span></span>
+                        <div className="grid grid-cols-2 sm:flex sm:items-center gap-y-1 gap-x-4 text-xs text-gray-600 font-medium">
+                          <span className="truncate">📞 <span className="font-bold text-gray-800">{acc.phone || 'N/A'}</span></span>
                           <span className="truncate hidden md:inline">📧 <span className="text-gray-700">{acc.email || 'N/A'}</span></span>
-                          <span className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-bold">In: {acc.commissionPayin ?? 0}%</span>
-                          <span className="text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded font-bold">Out: {acc.commissionPayout ?? 0}%</span>
+                          <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md font-bold text-[11px] border border-indigo-100">ইন: {acc.commissionPayin ?? 0}%</span>
+                          <span className="text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md font-bold text-[11px] border border-purple-100">আউট: {acc.commissionPayout ?? 0}%</span>
                           <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${
                             evaluateCommissionActive(acc) 
                               ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
                               : 'bg-red-50 text-red-700 border border-red-200'
                           }`}>
                             <Percent className="w-2.5 h-2.5" />
-                            <span>Comm: {evaluateCommissionActive(acc) ? 'Active' : 'Deactive'}</span>
+                            <span>কমিশন: {evaluateCommissionActive(acc) ? 'Active' : 'Deactive'}</span>
                           </span>
                         </div>
                       </div>
@@ -1536,7 +1612,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Deposit Numbers Management - Isolated Per Merchant */}
       {adminSection === 'wallets' && (
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-200/80 space-y-6">
         {/* Section Header */}
         {(() => {
           const currentMId = (merchant.merchantId || 'M20241018').trim();
@@ -1548,37 +1624,48 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <Wallet className="w-5 h-5 text-indigo-600" />
-                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base">
-                      ডিপোজিট ওয়ালেট নম্বর সেটিংস (Deposit Wallet Numbers)
-                    </h3>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+                      <Wallet className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-gray-900 text-base sm:text-lg">
+                        ডিপোজিট ওয়ালেট নম্বর সেটিংস
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        আপনার মার্চেন্ট গেটওয়েতে গ্রাহকদের প্রদর্শনের জন্য bKash, Nagad ও Rocket নম্বর যুক্ত করুন
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    আপনার মার্চেন্ট অ্যাকাউন্টের ডিপোজিট নম্বর যোগ করুন। একের অধিক নম্বর থাকলে স্বয়ংক্রিয়ভাবে রেনডম পদ্ধতিতে গ্রাহকদের প্রদান করা হবে।
-                  </p>
                 </div>
-                <span className="text-[11px] font-black bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl self-start sm:self-auto shrink-0 border border-indigo-100">
-                  আপনার ওয়ালেট: {myDepositNumbers.length}টি
-                </span>
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  <span className="text-xs font-black bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100/80">
+                    মোট সক্রিয় নম্বর: {myDepositNumbers.length}টি
+                  </span>
+                </div>
               </div>
 
               {/* Add Number Form - Locked to Own Merchant */}
-              <form onSubmit={handleAddNumber} className="bg-gray-50/70 p-4 sm:p-5 rounded-2xl border border-gray-200/80 space-y-4">
+              <form onSubmit={handleAddNumber} className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-gray-200/80 space-y-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                  <h4 className="text-xs font-black text-gray-800 uppercase tracking-wider">নতুন ওয়ালেট নম্বর যুক্ত করুন</h4>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                   {/* Current Merchant (Locked / Read-only) */}
                   <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
-                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">
                       আপনার মার্চেন্ট অ্যাকাউন্ট (Merchant ID)
                     </label>
-                    <div className="w-full bg-white border border-gray-200/90 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 flex items-center justify-between shadow-xs">
+                    <div className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 flex items-center justify-between shadow-2xs">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse"></span>
                         <span className="font-mono font-black text-indigo-600 text-xs tracking-wide">
                           {merchant.merchantId || 'M20241018'}
                         </span>
                       </div>
-                      <span className="text-[10px] text-gray-500 font-semibold truncate max-w-[140px] bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                      <span className="text-[10px] text-gray-500 font-semibold truncate max-w-[130px] bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
                         {merchant.name || merchant.email || 'Merchant Account'}
                       </span>
                     </div>
@@ -1586,56 +1673,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                   {/* Method */}
                   <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">মেথড</label>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">মেথড</label>
                     <select
                       value={newNumMethod}
                       onChange={(e) => setNewNumMethod(e.target.value as any)}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition shadow-2xs"
                     >
-                      <option value="bKash">bKash</option>
-                      <option value="Nagad">Nagad</option>
-                      <option value="Rocket">Rocket</option>
+                      <option value="bKash">bKash (বিকাশ)</option>
+                      <option value="Nagad">Nagad (নগদ)</option>
+                      <option value="Rocket">Rocket (রকেট)</option>
                     </select>
                   </div>
 
                   {/* Label */}
                   <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">টাইপ</label>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">টাইপ</label>
                     <select
                       value={newNumLabel}
                       onChange={(e) => setNewNumLabel(e.target.value as any)}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition shadow-2xs"
                     >
-                      <option value="Personal">Personal</option>
-                      <option value="Agent">Agent</option>
+                      <option value="Personal">Personal (ব্যক্তিগত)</option>
+                      <option value="Agent">Agent (এজেন্ট)</option>
                     </select>
                   </div>
 
                   {/* Limit */}
                   <div className="space-y-1.5">
-                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">ম্যাক্স লিমিট (BDT)</label>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">ম্যাক্স লিমিট (BDT)</label>
                     <input
                       type="number"
                       required
                       placeholder="50000"
                       value={newNumLimit}
                       onChange={(e) => setNewNumLimit(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition shadow-2xs"
                     />
                   </div>
 
                   {/* Wallet Number Input */}
                   <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
-                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider ml-1">
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider">
                       ওয়ালেট মোবাইল নম্বর (Wallet Number)
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="যেমন: 017XXXXXXXX"
+                      placeholder="যেমন: 017XXXXXXXX বা 019XXXXXXXX"
                       value={newNumVal}
                       onChange={(e) => setNewNumVal(e.target.value)}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition shadow-2xs"
                     />
                   </div>
 
@@ -1643,24 +1730,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="sm:col-span-2 lg:col-span-1 flex items-end">
                     <button
                       type="submit"
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl transition shadow-md shadow-indigo-100 active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer h-[38px]"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl transition shadow-md shadow-indigo-600/25 active:scale-95 text-xs flex items-center justify-center gap-1.5 cursor-pointer h-[40px]"
                     >
-                      <span>যোগ করুন</span>
+                      <span>+ নম্বর যোগ করুন</span>
                     </button>
                   </div>
                 </div>
               </form>
 
               {/* Active Wallets List */}
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3 pt-1">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-[11px] text-gray-500 uppercase tracking-widest px-1">
-                      আপনার সক্রিয় ওয়ালেট তালিকা (Your Active Wallets)
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-xs sm:text-sm text-gray-900 uppercase tracking-wider">
+                      আপনার সক্রিয় ওয়ালেট তালিকা
+                    </span>
+                    <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
+                      {myDepositNumbers.length}
+                    </span>
                   </div>
                   <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                    <span>মার্চেন্ট:</span>
+                    <span>মার্চেন্ট অ্যাকাউন্ট:</span>
                     <span className="font-mono font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
                       {merchant.merchantId || 'M20241018'}
                     </span>
@@ -1668,45 +1758,85 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 {/* Random Rotation Banner Notice */}
-                <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/80 rounded-xl flex items-center gap-2.5 text-indigo-900 text-xs">
-                  <Shuffle className="w-4 h-4 text-indigo-600 shrink-0 animate-pulse" />
-                  <p className="leading-snug">
-                    <strong>র‍্যান্ডম রোটেশন সক্রিয়:</strong> একই মেথডে (যেমন bKash) একাধিক নম্বর থাকলে ডিপোজিট বা পেমেন্ট পেজে গ্রাহকদের প্রতিবার স্বয়ংক্রিয়ভাবে একটি রেনডম নম্বর বরাদ্দ হবে।
+                <div className="p-3.5 bg-gradient-to-r from-indigo-50/80 via-purple-50/60 to-indigo-50/80 border border-indigo-100 rounded-2xl flex items-center gap-3 text-indigo-900 text-xs shadow-2xs">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Shuffle className="w-4 h-4 animate-spin-slow" />
+                  </div>
+                  <p className="leading-relaxed">
+                    <strong>স্মার্ট র‍্যান্ডম রোটেশন সক্রিয়:</strong> আপনার অ্যাকাউন্টে একই মেথডে (যেমন bKash) একের অধিক নম্বর থাকলে ডিপোজিট পেজে প্রতি গ্রাহককে স্বয়ংক্রিয়ভাবে আলাদা আলাদা রেনডম নম্বর বরাদ্দ করা হবে।
                   </p>
                 </div>
 
                 {/* Grid of Wallets */}
                 {myDepositNumbers.length === 0 ? (
-                  <div className="p-10 text-center text-gray-400 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-xs font-medium">
-                    আপনার মার্চেন্ট অ্যাকাউন্টে এখনও কোনো ওয়ালেট নম্বর যোগ করা নেই। উপরের ফর্ম থেকে নম্বর যোগ করুন।
+                  <div className="p-12 text-center text-gray-400 bg-slate-50/50 rounded-2xl border border-dashed border-gray-200 text-xs font-medium space-y-2">
+                    <Wallet className="w-8 h-8 text-gray-300 mx-auto" />
+                    <p className="font-bold text-gray-600">আপনার মার্চেন্ট অ্যাকাউন্টে এখনও কোনো ওয়ালেট নম্বর যোগ করা নেই</p>
+                    <p className="text-[11px] text-gray-400">উপরের ফর্ম ব্যবহার করে আপনার bKash, Nagad বা Rocket নম্বর যোগ করুন।</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
                     {myDepositNumbers.map((item, idx) => {
                       const usedAmount = transactions
                         .filter(t => t.walletNumber === item.number && (t.status === 'Success' || t.status === 'Pending'))
                         .reduce((sum, t) => sum + t.amount, 0);
                       const limit = item.limit || 50000;
+                      const percent = Math.min(100, Math.round((usedAmount / limit) * 100));
                       const isExceeded = usedAmount >= limit;
 
                       return (
-                        <div key={item.id || idx} className="p-4 border border-gray-100 rounded-2xl bg-white hover:border-indigo-100 transition shadow-xs group">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-2 min-w-0 flex-1">
+                        <div 
+                          key={item.id || idx} 
+                          className="p-4 border border-gray-200/90 rounded-2xl bg-white hover:border-indigo-300 hover:shadow-md transition-all group relative overflow-hidden"
+                        >
+                          {/* Top colored line by method */}
+                          <div className={`absolute top-0 left-0 right-0 h-1 ${
+                            item.method === 'bKash' ? 'bg-[#E2136E]' :
+                            item.method === 'Nagad' ? 'bg-[#F68F1E]' :
+                            'bg-[#8C3494]'
+                          }`} />
+
+                          <div className="flex items-start justify-between gap-3 pt-1">
+                            <div className="space-y-2.5 min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                                  item.method === 'bKash' ? 'bg-pink-100 text-pink-700' :
-                                  item.method === 'Nagad' ? 'bg-orange-100 text-orange-700' :
-                                  'bg-purple-100 text-purple-700'
+                                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-tight ${
+                                  item.method === 'bKash' ? 'bg-pink-100 text-pink-700 border border-pink-200' :
+                                  item.method === 'Nagad' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                                  'bg-purple-100 text-purple-700 border border-purple-200'
                                 }`}>
                                   {item.method}
                                 </span>
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
-                                  item.label === 'Personal' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
+                                <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-tight ${
+                                  item.label === 'Personal' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
                                 }`}>
                                   {item.label || 'Personal'}
                                 </span>
-                                <span className="font-mono font-bold text-gray-900 text-sm">{item.number}</span>
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-100">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Active
+                                </span>
+                              </div>
+
+                              {/* Number & Copy */}
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-black text-gray-900 text-base sm:text-lg tracking-wide">
+                                  {item.number}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyText(item.number)}
+                                  className="p-1 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+                                  title="নম্বর কপি করুন"
+                                >
+                                  {copiedNumber === item.number ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                                {copiedNumber === item.number && (
+                                  <span className="text-[10px] font-bold text-emerald-600 animate-in fade-in">কপি হয়েছে!</span>
+                                )}
                               </div>
 
                               {/* Merchant Identifier Badge */}
@@ -1717,22 +1847,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 </span>
                               </div>
 
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between text-[10px] font-bold text-gray-500">
-                                  <span>সীমা ব্যবহার</span>
-                                  <span className={isExceeded ? 'text-red-600' : 'text-emerald-600'}>
-                                    {Math.round((usedAmount / limit) * 100)}%
+                              {/* Limit Bar */}
+                              <div className="space-y-1.5 bg-gray-50/80 p-2.5 rounded-xl border border-gray-100">
+                                <div className="flex items-center justify-between text-[10px] font-bold text-gray-600">
+                                  <span>দৈনিক লিমিট ব্যবহার:</span>
+                                  <span className={isExceeded ? 'text-red-600 font-black' : 'text-emerald-700 font-black'}>
+                                    {percent}%
                                   </span>
                                 </div>
-                                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                <div className="w-full bg-gray-200/80 h-1.5 rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full rounded-full transition-all duration-500 ${isExceeded ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                    style={{ width: `${Math.min(100, (usedAmount / limit) * 100)}%` }}
+                                    style={{ width: `${percent}%` }}
                                   />
                                 </div>
-                                <p className="text-[10px] text-gray-400 font-medium">
-                                  ব্যবহৃত: <span className="text-gray-700 font-bold">৳{usedAmount.toLocaleString()}</span> / ৳{limit.toLocaleString()}
-                                </p>
+                                <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium">
+                                  <span>ব্যবহৃত: <strong className="text-gray-800">৳{usedAmount.toLocaleString()}</strong></span>
+                                  <span>সর্বোচ্চ: <strong className="text-gray-800">৳{limit.toLocaleString()}</strong></span>
+                                </div>
                               </div>
                             </div>
 
@@ -1740,7 +1872,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               type="button"
                               title="মুছে ফেলুন"
                               onClick={() => handleDeleteNumber(item)}
-                              className="p-2 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition cursor-pointer shrink-0"
+                              className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer shrink-0 border border-transparent hover:border-red-100"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -1759,161 +1891,237 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Transactions & Approvals Section */}
       {adminSection === 'transactions' && (
-        <>
-          {/* List Filters */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 -mx-1 px-1 custom-scrollbar">
-          <button
-            onClick={() => setFilterType('PendingDeposit')}
-            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
-              filterType === 'PendingDeposit' ? 'bg-amber-500 text-white shadow-md shadow-amber-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-          >
-            Pending Deposits
-          </button>
-          <button
-            onClick={() => setFilterType('PendingWithdrawal')}
-            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
-              filterType === 'PendingWithdrawal' ? 'bg-amber-500 text-white shadow-md shadow-amber-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-          >
-            Pending Payouts
-          </button>
-          <button
-            onClick={() => setFilterType('AllDeposit')}
-            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
-              filterType === 'AllDeposit' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-          >
-            All Deposits
-          </button>
-          <button
-            onClick={() => setFilterType('AllWithdrawal')}
-            className={`px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black transition whitespace-nowrap ${
-              filterType === 'AllWithdrawal' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-            }`}
-          >
-            All Payouts
-          </button>
-        </div>
-
-        <div className="relative">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-64 bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-indigo-600 focus:bg-white transition font-medium"
-          />
-        </div>
-      </div>
-
-      {/* Approval List */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
-          <h3 className="font-black text-gray-900 text-xs sm:text-sm tracking-tight">
-            Transaction Requests ({displayList.length})
-          </h3>
-        </div>
-
-        <div className="divide-y divide-gray-50">
-          {displayList.length === 0 ? (
-            <div className="p-16 text-center text-gray-400 font-medium italic text-xs bg-white">
-              No transactions found in this view.
+        <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-200/80 space-y-5">
+          {/* Header & List Filters */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-gray-900 text-base sm:text-lg">
+                    লেনদেন ও অনুমোদন পোর্টাল (Transactions)
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {isSuperAdmin ? 'সকল গ্রাহক ও মার্চেন্টের ডিপোজিট ও উত্তোলন অনুমোদন করুন' : 'আপনার অ্যাকাউন্টের লেনদেন স্থিতি ও অগ্রগতি'}
+                  </p>
+                </div>
+              </div>
             </div>
-          ) : (
-            displayList.map((tx) => {
-              const isPending = tx.status === 'Pending';
-              return (
-                <div key={tx.id} className="p-4 sm:p-6 hover:bg-gray-50/60 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-                  <div className="space-y-2 flex-1 min-w-0 w-full sm:w-auto">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-mono font-black text-gray-900 text-[10px] sm:text-xs bg-white px-1.5 py-0.5 rounded-lg border border-gray-100">
-                        {tx.transactionId}
-                      </span>
-                      <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tight ${
-                        tx.type === 'Payin' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {tx.type === 'Payin' ? 'Deposit' : 'Payout'}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
-                        tx.status === 'Success' ? 'bg-emerald-50 text-emerald-700' :
-                        tx.status === 'Pending' ? 'bg-amber-50 text-amber-700 animate-pulse' :
-                        'bg-red-50 text-red-700'
-                      }`}>
-                        {tx.status}
-                      </span>
+
+            <div className="relative w-full md:w-72">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                placeholder="TrxID, ফোন বা নাম খুঁজুন..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white font-medium transition shadow-2xs"
+              />
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar">
+            <button
+              type="button"
+              onClick={() => setFilterType('PendingDeposit')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                filterType === 'PendingDeposit' 
+                  ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25' 
+                  : 'bg-slate-100/80 text-gray-600 hover:text-gray-900 hover:bg-slate-200/70'
+              }`}
+            >
+              <span>পেন্ডিং ডিপোজিট</span>
+              {pendingDeposits.length > 0 && (
+                <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                  filterType === 'PendingDeposit' ? 'bg-amber-700/80 text-white' : 'bg-amber-500 text-white'
+                }`}>
+                  {pendingDeposits.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterType('PendingWithdrawal')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                filterType === 'PendingWithdrawal' 
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25' 
+                  : 'bg-slate-100/80 text-gray-600 hover:text-gray-900 hover:bg-slate-200/70'
+              }`}
+            >
+              <span>পেন্ডিং উত্তোলন</span>
+              {pendingWithdrawals.length > 0 && (
+                <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                  filterType === 'PendingWithdrawal' ? 'bg-orange-700/80 text-white' : 'bg-orange-500 text-white'
+                }`}>
+                  {pendingWithdrawals.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterType('AllDeposit')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                filterType === 'AllDeposit' 
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' 
+                  : 'bg-slate-100/80 text-gray-600 hover:text-gray-900 hover:bg-slate-200/70'
+              }`}
+            >
+              সকল ডিপোজিট
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFilterType('AllWithdrawal')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                filterType === 'AllWithdrawal' 
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25' 
+                  : 'bg-slate-100/80 text-gray-600 hover:text-gray-900 hover:bg-slate-200/70'
+              }`}
+            >
+              সকল উত্তোলন
+            </button>
+          </div>
+
+          {/* Transactions List */}
+          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+            {displayList.length === 0 ? (
+              <div className="p-14 text-center text-gray-400 font-medium italic text-xs bg-slate-50/50 rounded-2xl border border-dashed border-gray-200 space-y-1.5">
+                <CreditCard className="w-8 h-8 text-gray-300 mx-auto" />
+                <p className="font-bold text-gray-600">কোনো লেনদেন পাওয়া যায়নি</p>
+                <p className="text-[11px] text-gray-400">এই ফিল্টারে বর্তমানে কোনো রিকোয়েস্ট নেই।</p>
+              </div>
+            ) : (
+              displayList.map((tx) => {
+                const isPending = tx.status === 'Pending';
+                return (
+                  <div 
+                    key={tx.id} 
+                    className="p-4 sm:p-5 rounded-2xl border border-gray-200/90 bg-white hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-2.5 flex-1 min-w-0 w-full sm:w-auto">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-black text-gray-900 text-xs sm:text-sm bg-slate-100 px-2.5 py-1 rounded-lg border border-gray-200">
+                            {tx.transactionId}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyText(tx.transactionId)}
+                            className="p-1 text-gray-400 hover:text-indigo-600 transition cursor-pointer"
+                            title="ID কপি করুন"
+                          >
+                            {copiedNumber === tx.transactionId ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tight ${
+                          tx.type === 'Payin' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-amber-100 text-amber-800 border border-amber-200'
+                        }`}>
+                          {tx.type === 'Payin' ? 'Deposit (ডিপোজিট)' : 'Payout (উত্তোলন)'}
+                        </span>
+
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black flex items-center gap-1 ${
+                          tx.status === 'Success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                          tx.status === 'Pending' ? 'bg-amber-100 text-amber-800 animate-pulse border border-amber-200' :
+                          'bg-red-100 text-red-800 border border-red-200'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            tx.status === 'Success' ? 'bg-emerald-500' : tx.status === 'Pending' ? 'bg-amber-500' : 'bg-red-500'
+                          }`} />
+                          <span>{tx.status}</span>
+                        </span>
+
+                        {tx.method && (
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                            tx.method === 'bKash' ? 'bg-pink-100 text-pink-700' :
+                            tx.method === 'Nagad' ? 'bg-orange-100 text-orange-700' :
+                            'bg-purple-100 text-purple-700'
+                          }`}>
+                            {tx.method}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-gray-600 font-medium">
+                        <span className="flex items-center gap-1">
+                           <span className="text-gray-400">👤 গ্রাহক:</span>
+                           <span className="font-mono font-bold text-gray-900">{tx.customerPhone || 'Unknown'}</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                           <span className="text-gray-400">📅 সময়:</span>
+                           <span className="text-gray-700">{new Date(tx.createdAt).toLocaleString()}</span>
+                        </span>
+                        {tx.walletNumber && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-gray-400">📲 ওয়ালেট:</span>
+                            <span className="font-mono font-bold text-indigo-700">{tx.walletNumber}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-y-1 gap-x-3 text-[10px] text-gray-500 font-medium">
-                      <span className="flex items-center gap-1 truncate">
-                         <span className="text-gray-400">👤</span>
-                         <span className="text-gray-700 font-bold truncate max-w-[120px]">{tx.customerPhone || 'Unknown'}</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                         <span className="text-gray-400">📅</span>
-                         <span className="text-gray-700">{new Date(tx.createdAt).toLocaleString()}</span>
-                      </span>
-                      {tx.method && (
-                        <span className="flex items-center gap-1">
-                          <span className="text-gray-400">💳</span>
-                          <span className="text-gray-700 font-bold">{tx.method}</span>
-                        </span>
+                    <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+                      <div className="text-left sm:text-right">
+                        <p className="text-[9px] text-gray-400 font-black uppercase tracking-wider mb-0.5">টাকার পরিমাণ</p>
+                        <p className="text-base sm:text-lg font-black text-emerald-700">
+                          {formatBDT(tx.amount)}
+                        </p>
+                      </div>
+
+                      {isPending ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleApprove(tx)}
+                            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-3.5 py-2 rounded-xl text-xs font-black transition shadow-md shadow-emerald-600/25 active:scale-95 cursor-pointer flex items-center gap-1.5"
+                            title="ডিপোজিট অনুমোদন করুন এবং ব্যালেন্সে টাকা যুক্ত করুন"
+                          >
+                            <Check className="w-4 h-4 stroke-[2.5]" />
+                            <span>অনুমোদন</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReject(tx)}
+                            className="bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-rose-200 hover:border-rose-300 shadow-2xs cursor-pointer active:scale-95 flex items-center gap-1.5"
+                            title="ডিপোজিট রিকোয়েস্ট বাতিল করুন"
+                          >
+                            <X className="w-4 h-4 text-rose-500 stroke-[2.5]" />
+                            <span>বাতিল (Cancel)</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-tight ${
+                          tx.status === 'Success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                        }`}>
+                          {tx.status === 'Success' ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Approved</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3.5 h-3.5 text-red-600" />
+                              <span>Rejected</span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-50">
-                    <div className="text-left sm:text-right">
-                      <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest mb-0.5">Amount</p>
-                      <p className="text-base font-black text-emerald-700">
-                        {formatBDT(tx.amount)}
-                      </p>
-                    </div>
-
-                    {isPending ? (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleApprove(tx)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-[10px] font-black transition shadow-md shadow-emerald-100 active:scale-95 cursor-pointer"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleReject(tx)}
-                          className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl text-[10px] font-bold transition border border-red-100 cursor-pointer active:scale-95"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    ) : (
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-xl font-black text-[9px] uppercase tracking-tight ${
-                        tx.status === 'Success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                      }`}>
-                        {tx.status === 'Success' ? (
-                          <>
-                            <CheckCircle2 className="w-2.5 h-2.5" />
-                            <span>Approved</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-2.5 h-2.5" />
-                            <span>Rejected</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </div>
         </div>
-      </div>
-      </>
       )}
     </div>
   );
