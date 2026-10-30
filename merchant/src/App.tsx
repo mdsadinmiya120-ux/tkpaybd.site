@@ -94,15 +94,59 @@ export default function App() {
 
   const [apiKey, setApiKey] = useState<ApiKeyConfig>(initialApiKey);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+
+  // Persistent checkout data so page refresh on payment screen never exits
   const [checkoutData, setCheckoutData] = useState<{ txId: string; amount: number; method?: 'bKash' | 'Nagad' | 'Rocket'; merchantId?: string } | null>(() => {
+    // 1. Check URL query parameters
     const params = new URLSearchParams(window.location.search);
     const payId = params.get('pay') || params.get('checkout');
     const mId = params.get('m') || params.get('merchant') || params.get('merchantId');
+    const urlAmount = parseFloat(params.get('amount') || '0');
+    const urlMethod = params.get('method') as 'bKash' | 'Nagad' | 'Rocket' | null;
+
     if (payId) {
-      return { txId: payId, amount: 500, method: 'bKash', merchantId: mId || undefined };
+      let txAmount = urlAmount || 0;
+      let txMethod = urlMethod || 'bKash';
+      let txMerchantId = mId || undefined;
+      try {
+        const savedTx = localStorage.getItem('chaopaopay_transactions');
+        if (savedTx) {
+          const list = JSON.parse(savedTx);
+          const match = list.find((t: any) => t.transactionId === payId);
+          if (match) {
+            if (match.amount) txAmount = match.amount;
+            if (match.method) txMethod = match.method;
+            if (match.merchantId) txMerchantId = match.merchantId;
+          }
+        }
+      } catch (e) {}
+      return { txId: payId, amount: txAmount || 500, method: txMethod, merchantId: txMerchantId };
     }
+
+    // 2. Check saved checkout session in localStorage
+    try {
+      const savedCheckout = localStorage.getItem('chaopaopay_current_checkout');
+      if (savedCheckout) {
+        const parsed = JSON.parse(savedCheckout);
+        if (parsed && parsed.txId) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+
     return null;
   });
+
+  // Sync checkoutData to localStorage
+  useEffect(() => {
+    try {
+      if (checkoutData) {
+        localStorage.setItem('chaopaopay_current_checkout', JSON.stringify(checkoutData));
+      } else {
+        localStorage.removeItem('chaopaopay_current_checkout');
+      }
+    } catch (e) {}
+  }, [checkoutData]);
 
   const pendingDepositsCount = transactions.filter(t => t.type === 'Payin' && t.status === 'Pending').length;
 
@@ -820,7 +864,15 @@ export default function App() {
         method={checkoutData.method || 'bKash'}
         merchantId={checkoutData.merchantId || merchant.merchantId}
         onPaymentSubmit={handlePaymentSubmit}
-        onBackToDashboard={() => setCheckoutData(null)}
+        onBackToDashboard={() => {
+          setCheckoutData(null);
+          try {
+            localStorage.removeItem('chaopaopay_current_checkout');
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          } catch (e) {}
+        }}
       />
     );
   }

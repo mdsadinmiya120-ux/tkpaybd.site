@@ -66,48 +66,97 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     return '';
   }, [merchantId, transactionId]);
 
-  // Check if existing transaction already has a designated walletNumber assigned
-  const existingTxWallet = React.useMemo(() => {
+  // Persistent assigned wallet number locked per transactionId and payment method
+  const [assignedWallet, setAssignedWallet] = useState<string>(() => {
+    const lockKey = `chaopaopay_assigned_wallet_${transactionId}_${method}`;
     try {
+      // 1. Check method-specific lock key in localStorage
+      const locked = localStorage.getItem(lockKey);
+      if (locked) return locked;
+
+      // 2. Check transaction record in localStorage
       const savedTx = localStorage.getItem('chaopaopay_transactions');
       if (savedTx) {
         const list = JSON.parse(savedTx);
         const match = list.find((t: any) => t.transactionId === transactionId);
-        if (match && match.walletNumber) return match.walletNumber as string;
+        if (match && match.walletNumber && (!match.method || match.method === method)) {
+          localStorage.setItem(lockKey, match.walletNumber);
+          return match.walletNumber;
+        }
       }
     } catch (e) {}
-    return null;
-  }, [transactionId]);
 
-  // Dynamic wallet info from merchant configured numbers (picks random in background if multiple exist)
-  const [walletInfo, setWalletInfo] = useState<{ number: string; label: 'Personal' | 'Agent'; count: number }>(() => 
-    getWalletDetailsForMethod(method, effectiveMerchantId)
-  );
+    // 3. Fallback: Pick a random valid wallet number for this method & merchant and lock it
+    const details = getWalletDetailsForMethod(method, effectiveMerchantId);
+    const chosen = details.number || '';
+    if (chosen) {
+      try {
+        localStorage.setItem(lockKey, chosen);
+        const savedTx = localStorage.getItem('chaopaopay_transactions');
+        if (savedTx) {
+          const list = JSON.parse(savedTx);
+          const updated = list.map((t: any) => {
+            if (t.transactionId === transactionId) {
+              return { ...t, walletNumber: chosen, method };
+            }
+            return t;
+          });
+          localStorage.setItem('chaopaopay_transactions', JSON.stringify(updated));
+        }
+      } catch (e) {}
+    }
+    return chosen;
+  });
+
+  // Sync / update wallet when currentMethod changes or background updates happen
+  useEffect(() => {
+    const lockKey = `chaopaopay_assigned_wallet_${transactionId}_${currentMethod}`;
+    try {
+      const locked = localStorage.getItem(lockKey);
+      if (locked) {
+        setAssignedWallet(locked);
+        return;
+      }
+    } catch (e) {}
+
+    // Pick a valid random number for currentMethod and lock it permanently
+    const details = getWalletDetailsForMethod(currentMethod, effectiveMerchantId);
+    const chosen = details.number || '';
+    if (chosen) {
+      try {
+        localStorage.setItem(lockKey, chosen);
+        const savedTx = localStorage.getItem('chaopaopay_transactions');
+        if (savedTx) {
+          const list = JSON.parse(savedTx);
+          const updated = list.map((t: any) => {
+            if (t.transactionId === transactionId) {
+              return { ...t, walletNumber: chosen, method: currentMethod };
+            }
+            return t;
+          });
+          localStorage.setItem('chaopaopay_transactions', JSON.stringify(updated));
+        }
+      } catch (e) {}
+    }
+    setAssignedWallet(chosen);
+  }, [currentMethod, transactionId, effectiveMerchantId]);
 
   useEffect(() => {
-    // If merchantId is known, sync latest numbers from Firebase in background
     if (effectiveMerchantId) {
-      syncMerchantNumbersFromFirebase(effectiveMerchantId).then((numbers) => {
-        if (numbers && numbers.length > 0) {
-          setWalletInfo(getWalletDetailsForMethod(currentMethod, effectiveMerchantId));
-        }
-      });
+      syncMerchantNumbersFromFirebase(effectiveMerchantId).catch(() => {});
     }
+  }, [effectiveMerchantId]);
 
-    const updateWallet = () => {
-      setWalletInfo(getWalletDetailsForMethod(currentMethod, effectiveMerchantId));
+  const walletNumber = assignedWallet;
+
+  const walletInfo = React.useMemo(() => {
+    const details = getWalletDetailsForMethod(currentMethod, effectiveMerchantId);
+    return {
+      number: walletNumber,
+      label: details.label || 'Personal',
+      count: details.count || 1
     };
-
-    updateWallet();
-    window.addEventListener('storage', updateWallet);
-    window.addEventListener('depositNumbersUpdated', updateWallet);
-    return () => {
-      window.removeEventListener('storage', updateWallet);
-      window.removeEventListener('depositNumbersUpdated', updateWallet);
-    };
-  }, [currentMethod, effectiveMerchantId]);
-
-  const walletNumber = existingTxWallet || walletInfo.number;
+  }, [currentMethod, effectiveMerchantId, walletNumber]);
 
   const isBkash = currentMethod === 'bKash';
   const isNagad = currentMethod === 'Nagad';

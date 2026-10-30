@@ -103,6 +103,15 @@ export const DepositModal: React.FC<DepositModalProps> = ({
     setLoading(true);
     setTimeout(() => {
       const randomId = 'DEP' + new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14) + Math.random().toString(36).substring(2, 6).toUpperCase();
+      const assignedNum = currentWallet ? currentWallet.number : getValidRandomWalletNumber(method, merchantId);
+
+      // Lock assigned wallet number in localStorage for this transaction
+      if (assignedNum) {
+        try {
+          localStorage.setItem(`chaopaopay_assigned_wallet_${randomId}_${method}`, assignedNum);
+        } catch (e) {}
+      }
+
       const newTx: Transaction = {
         id: 'tx_' + Date.now(),
         transactionId: randomId,
@@ -116,7 +125,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         customerName: 'Merchant Deposit',
         createdAt: new Date().toISOString(),
         charge: commissionEarned,
-        walletNumber: currentWallet ? currentWallet.number : getValidRandomWalletNumber(method, merchantId),
+        walletNumber: assignedNum,
       };
 
       onAddTransaction(newTx);
