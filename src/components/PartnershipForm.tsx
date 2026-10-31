@@ -309,7 +309,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
             <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
               {/* BDT Option -> Telegram Link */}
               <a 
-                href="https://t.me/tkpaybd12" 
+                href="https://t.me/tkpay_BD" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 onClick={() => setPaymentMethod('BDT')} 
@@ -320,7 +320,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
                   <span className="font-bold text-base text-gray-900 block">BDT</span>
                   <span className="text-[11px] text-emerald-700 font-semibold block">বিকাশ / নগদ</span>
                   <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 font-bold mt-1.5 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
-                    <MessageSquare className="w-2.5 h-2.5" /> @tkpaybd12 <ExternalLink className="w-2.5 h-2.5" />
+                    <MessageSquare className="w-2.5 h-2.5" /> @tkpay_BD <ExternalLink className="w-2.5 h-2.5" />
                   </span>
                 </div>
               </a>
@@ -437,7 +437,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
               <div>
                 <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Telegram Official Support</p>
                 <h4 className="font-extrabold text-sm sm:text-base">বিকাশ / নগদ পেমেন্ট সাপোর্ট</h4>
-                <p className="text-[11px] text-blue-100">টেলিগ্রাম @tkpaybd12 এর সাথে যোগাযোগ করে পেমেন্ট সম্পন্ন করুন</p>
+                <p className="text-[11px] text-blue-100">টেলিগ্রাম @tkpay_BD এর সাথে যোগাযোগ করে পেমেন্ট সম্পন্ন করুন</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
                 <MessageSquare className="w-6 h-6 text-white" />
@@ -449,10 +449,10 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-bold text-gray-800">অফিসিয়াল টেলিগ্রাম:</p>
-                  <p className="font-mono text-sm font-extrabold text-blue-700">@tkpaybd12</p>
+                  <p className="font-mono text-sm font-extrabold text-blue-700">@tkpay_BD</p>
                 </div>
                 <a
-                  href="https://t.me/tkpaybd12"
+                  href="https://t.me/tkpay_BD"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 bg-[#229ED9] hover:bg-[#1E88E5] text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-sm transition"
@@ -463,7 +463,7 @@ export const PartnershipForm: React.FC<PartnershipFormProps> = ({ onClose, onSub
                 </a>
               </div>
               <p className="text-[11px] text-gray-600">
-                টেলিগ্রাম @tkpaybd12 এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। পেমেন্ট শেষ হলে TrxID নিচে দিন।
+                টেলিগ্রাম @tkpay_BD এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। পেমেন্ট শেষ হলে TrxID নিচে দিন।
               </p>
             </div>
 

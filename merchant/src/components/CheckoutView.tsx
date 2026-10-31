@@ -16,7 +16,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
-import { getWalletDetailsForMethod, syncMerchantNumbersFromFirebase } from '../utils/wallet';
+import { getWalletDetailsForMethod, syncMerchantNumbersFromFirebase, getMerchantDepositNumbers, DepositWalletNumber } from '../utils/wallet';
 
 interface CheckoutViewProps {
   transactionId: string;
@@ -66,32 +66,14 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     return '';
   }, [merchantId, transactionId]);
 
-  // Persistent assigned wallet number locked per transactionId and payment method
+  // Dynamic wallet selection: picks a random active number from merchant's saved list on every refresh
   const [assignedWallet, setAssignedWallet] = useState<string>(() => {
-    const lockKey = `chaopaopay_assigned_wallet_${transactionId}_${method}`;
-    try {
-      // 1. Check method-specific lock key in localStorage
-      const locked = localStorage.getItem(lockKey);
-      if (locked) return locked;
-
-      // 2. Check transaction record in localStorage
-      const savedTx = localStorage.getItem('chaopaopay_transactions');
-      if (savedTx) {
-        const list = JSON.parse(savedTx);
-        const match = list.find((t: any) => t.transactionId === transactionId);
-        if (match && match.walletNumber && (!match.method || match.method === method)) {
-          localStorage.setItem(lockKey, match.walletNumber);
-          return match.walletNumber;
-        }
-      }
-    } catch (e) {}
-
-    // 3. Fallback: Pick a random valid wallet number for this method & merchant and lock it
     const details = getWalletDetailsForMethod(method, effectiveMerchantId);
     const chosen = details.number || '';
+    
+    // Update transaction in localStorage with the selected wallet number
     if (chosen) {
       try {
-        localStorage.setItem(lockKey, chosen);
         const savedTx = localStorage.getItem('chaopaopay_transactions');
         if (savedTx) {
           const list = JSON.parse(savedTx);
@@ -108,23 +90,14 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     return chosen;
   });
 
-  // Sync / update wallet when currentMethod changes or background updates happen
+  // Pick a fresh random number from saved active list when method changes or component updates
   useEffect(() => {
-    const lockKey = `chaopaopay_assigned_wallet_${transactionId}_${currentMethod}`;
-    try {
-      const locked = localStorage.getItem(lockKey);
-      if (locked) {
-        setAssignedWallet(locked);
-        return;
-      }
-    } catch (e) {}
-
-    // Pick a valid random number for currentMethod and lock it permanently
     const details = getWalletDetailsForMethod(currentMethod, effectiveMerchantId);
     const chosen = details.number || '';
+    setAssignedWallet(chosen);
+
     if (chosen) {
       try {
-        localStorage.setItem(lockKey, chosen);
         const savedTx = localStorage.getItem('chaopaopay_transactions');
         if (savedTx) {
           const list = JSON.parse(savedTx);
@@ -138,8 +111,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         }
       } catch (e) {}
     }
-    setAssignedWallet(chosen);
-  }, [currentMethod, transactionId, effectiveMerchantId]);
+  }, [currentMethod, effectiveMerchantId, transactionId]);
 
   useEffect(() => {
     if (effectiveMerchantId) {
@@ -149,14 +121,39 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
   const walletNumber = assignedWallet;
 
+  // Retrieve ALL active numbers for the currently selected method (bKash / Nagad / Rocket)
+  const activeMethodNumbers = React.useMemo(() => {
+    const all = getMerchantDepositNumbers(effectiveMerchantId);
+    const filtered = all.filter((n: DepositWalletNumber) => 
+      n && n.number && n.method && 
+      n.method.toLowerCase() === currentMethod.toLowerCase() && 
+      n.isActive !== false
+    );
+    if (filtered.length > 0) return filtered;
+
+    // Fallback if no specific numbers saved but walletNumber is available
+    if (walletNumber) {
+      return [{ id: 'fallback_1', method: currentMethod, number: walletNumber, label: 'Personal' as const }];
+    }
+    return [];
+  }, [currentMethod, effectiveMerchantId, walletNumber]);
+
+  const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
+
+  const handleCopyNumber = (numStr: string) => {
+    navigator.clipboard.writeText(numStr);
+    setCopiedNumber(numStr);
+    setTimeout(() => setCopiedNumber(null), 2000);
+  };
+
   const walletInfo = React.useMemo(() => {
     const details = getWalletDetailsForMethod(currentMethod, effectiveMerchantId);
     return {
       number: walletNumber,
       label: details.label || 'Personal',
-      count: details.count || 1
+      count: activeMethodNumbers.length || details.count || 1
     };
-  }, [currentMethod, effectiveMerchantId, walletNumber]);
+  }, [currentMethod, effectiveMerchantId, walletNumber, activeMethodNumbers]);
 
   const isBkash = currentMethod === 'bKash';
   const isNagad = currentMethod === 'Nagad';
@@ -380,46 +377,72 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               </div>
             </div>
 
-            {/* Wallet No Section - Clean and without internal rotation debug text */}
-            <div className="space-y-1.5">
+            {/* Wallet No Section - Displays ALL numbers saved for the selected method */}
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-gray-900 text-sm sm:text-base">
-                  <span>Wallet No</span>
+                  <span>{currentMethod} ওয়ালেট নম্বরসমূহ</span>
                   <span className="text-red-500">*</span>
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase ${
-                    walletInfo.label === 'Agent' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {walletInfo.label}
+                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md uppercase">
+                    {activeMethodNumbers.length}টি সক্রিয়
                   </span>
                 </div>
               </div>
               
               <p className="text-xs sm:text-[13px] text-gray-800 leading-snug font-normal">
-                এই {isBkash ? 'বিকাশ' : isNagad ? 'নগদ' : 'রকেট'} {walletInfo.label === 'Agent' ? 'এজেন্ট' : 'পার্সোনাল'} অ্যাকাউন্টে অর্থ প্রদান করতে <strong className="text-red-600 font-extrabold">{walletInfo.label === 'Agent' ? 'ক্যাশ আউট (Cash Out)' : 'সেন্ড মানি (Send Money)'}</strong> ব্যবহার করুন
+                নিচের যে কোনো একটি <strong className="text-gray-900 font-extrabold">{isBkash ? 'বিকাশ' : isNagad ? 'নগদ' : 'রকেট'}</strong> নম্বরে টাকা পাঠান এবং লেনদেন সম্পন্ন করে নিচে TrxID লিখুন:
               </p>
 
-              {/* Number Box with Copy Button */}
-              <div className="flex items-center justify-between p-3.5 bg-[#f8f9fa] border border-gray-200/90 rounded-2xl shadow-2xs mt-1">
-                <span className="font-mono font-black text-lg sm:text-xl text-gray-900 tracking-wider">
-                  {walletNumber}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="p-1.5 rounded-xl text-emerald-600 hover:bg-emerald-50 active:scale-95 transition cursor-pointer flex items-center gap-1"
-                  title="Copy Wallet Number"
-                >
-                  {copied ? (
-                    <span className="text-xs font-extrabold text-emerald-600 flex items-center gap-1">
-                      <Check className="w-5 h-5 text-emerald-600 stroke-[3]" /> কপি হয়েছে
-                    </span>
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                      <Copy className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
-                    </div>
-                  )}
-                </button>
-              </div>
+              {activeMethodNumbers.length === 0 ? (
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 font-bold text-center">
+                  ⚠️ বর্তমানে {currentMethod} মেথডের কোনো সক্রিয় নম্বর সেট করা নেই।
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {activeMethodNumbers.map((item, idx) => {
+                    const isCopied = copiedNumber === item.number;
+                    const labelType = item.label || 'Personal';
+                    const isAgent = labelType === 'Agent';
+
+                    return (
+                      <div 
+                        key={item.id || idx}
+                        className="p-3.5 bg-[#f8f9fa] border-2 border-gray-200/90 hover:border-emerald-500/80 rounded-2xl shadow-2xs transition-all flex items-center justify-between gap-3"
+                      >
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tight ${
+                              isAgent ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-blue-100 text-blue-800 border border-blue-200'
+                            }`}>
+                              {labelType} ({isAgent ? 'ক্যাশ আউট / Cash Out' : 'সেন্ড মানি / Send Money'})
+                            </span>
+                          </div>
+                          <div className="font-mono font-black text-lg sm:text-xl text-gray-900 tracking-wider truncate">
+                            {item.number}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyNumber(item.number)}
+                          className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 active:scale-95 transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
+                          title="নম্বর কপি করুন"
+                        >
+                          {isCopied ? (
+                            <span className="text-xs font-black text-emerald-700 flex items-center gap-1">
+                              <Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> কপি হয়েছে
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                              <Copy className="w-4 h-4 text-emerald-600 stroke-[2.5]" /> কপি করুন
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* bKash App Menu Illustration Grid (8 Icons) matching exact screenshot */}

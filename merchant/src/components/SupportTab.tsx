@@ -72,11 +72,11 @@ export const SupportTab: React.FC = () => {
                 <MessageSquare className="w-5 h-5 text-indigo-600" />
                 <div>
                   <p className="font-semibold text-gray-900">Telegram Support Channel</p>
-                  <p className="text-[11px] text-gray-500">@tkpaybd12</p>
+                  <p className="text-[11px] text-gray-500">@tkpay_BD</p>
                 </div>
               </div>
               <a
-                href="https://t.me/tkpaybd12"
+                href="https://t.me/tkpay_BD"
                 target="_blank"
                 rel="noreferrer"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition"

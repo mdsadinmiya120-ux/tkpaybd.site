@@ -53,7 +53,7 @@ $response = curl_exec($ch);`
   }'`,
       nodejs: `const axios = require('axios');
 
-const response = await axios.post('https://api.tkpaybd.com/v1/payin/create', {
+const response = await axios.post('https://tkpaybd.site/api/v1/payin/create', {
   amount: 500.00,
   currency: 'BDT',
   method: 'bKash',
@@ -71,13 +71,13 @@ const response = await axios.post('https://api.tkpaybd.com/v1/payin/create', {
     "customer_phone" => "017XXXXXXXX"
 ];
 
-$ch = curl_init('https://api.tkpaybd.com/v1/payin/create');
+$ch = curl_init('https://tkpaybd.site/api/v1/payin/create');
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-KEY: YOUR_SECRET_KEY', 'Content-Type: application/json']);
 $response = curl_exec($ch);`
     },
     'payout': {
-      curl: `curl -X POST https://api.tkpaybd.com/v1/payout/create \\
+      curl: `curl -X POST https://tkpaybd.site/api/v1/payout/create \\
   -H "X-API-KEY: YOUR_SECRET_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -88,7 +88,7 @@ $response = curl_exec($ch);`
   }'`,
       nodejs: `const axios = require('axios');
 
-const response = await axios.post('https://api.tkpaybd.com/v1/payout/create', {
+const response = await axios.post('https://tkpaybd.site/api/v1/payout/create', {
   amount: 1000.00,
   method: 'Nagad',
   wallet_number: '018XXXXXXXX',
@@ -102,7 +102,7 @@ const response = await axios.post('https://api.tkpaybd.com/v1/payout/create', {
     "wallet_number" => "018XXXXXXXX"
 ];
 
-$ch = curl_init('https://api.tkpaybd.com/v1/payout/create');
+$ch = curl_init('https://tkpaybd.site/api/v1/payout/create');
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-KEY: YOUR_SECRET_KEY']);
 $response = curl_exec($ch);`
@@ -199,19 +199,24 @@ $response = curl_exec($ch);`
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <Server className="w-4 h-4 text-gray-400" /> API Base URL
-              </h4>
-              <div className="bg-gray-900 rounded-xl p-3 flex items-center justify-between group">
-                <code className="text-xs font-mono text-emerald-400">https://api.tkpaybd.com/v1</code>
-                <button 
-                  onClick={() => copyToClipboard('https://api.tkpaybd.com/v1', 'base-url')}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-white/10 rounded-lg text-white"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
+            <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-xs font-bold text-gray-900 mb-1 flex items-center gap-2">
+                  <Server className="w-4 h-4 text-gray-400" /> API Base URL
+                </h4>
+                <code className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 inline-block">
+                  https://tkpaybd.site/api/v1/
+                </code>
               </div>
+
+              <a
+                href="/docs/api.php"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#6366f1] hover:bg-[#4f46e5] text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center gap-2 shadow-md transition cursor-pointer"
+              >
+                <span>Full API Reference Page →</span>
+              </a>
             </div>
           </div>
         )}

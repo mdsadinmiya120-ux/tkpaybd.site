@@ -36,54 +36,55 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b16] text-white font-sans selection:bg-indigo-500/30 selection:text-indigo-200 flex flex-col justify-between relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#070b16] text-white font-sans selection:bg-indigo-500/30 selection:text-indigo-200 flex flex-col justify-between relative">
       {/* Background radial gradient glow for premium dark fintech look */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[900px] h-[450px] bg-gradient-to-b from-indigo-600/15 via-blue-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
 
-      <div>
-        {/* Navigation Bar */}
-        <header className="border-b border-slate-800/80 bg-[#070b16]/90 backdrop-blur-md sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-            {/* Brand Logo */}
-            <Link to="/" className="flex items-center gap-1.5 group cursor-pointer">
-              <span className="font-extrabold text-2xl sm:text-3xl tracking-tight text-white flex items-center">
-                <span>T</span>
-                <span className="text-[#eb6a24]">K</span>
-                <span className="text-slate-100 font-semibold ml-0.5">pay</span>
-                <span className="text-[#10b981] font-bold ml-0.5">BD</span>
-              </span>
-              {/* Signal / Wifi waves icon */}
-              <div className="relative flex items-center ml-0.5 text-[#10b981]">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
-                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                  <circle cx="12" cy="20" r="1" fill="currentColor" />
-                </svg>
-              </div>
+      {/* Navigation Bar - Fixed Header anchored at top */}
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-800/80 bg-[#070b16]/95 backdrop-blur-xl shadow-lg shadow-black/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-1.5 group cursor-pointer">
+            <span className="font-extrabold text-2xl sm:text-3xl tracking-tight text-white flex items-center">
+              <span>T</span>
+              <span className="text-[#eb6a24]">K</span>
+              <span className="text-slate-100 font-semibold ml-0.5">pay</span>
+              <span className="text-[#10b981] font-bold ml-0.5">BD</span>
+            </span>
+            {/* Signal / Wifi waves icon */}
+            <div className="relative flex items-center ml-0.5 text-[#10b981]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <circle cx="12" cy="20" r="1" fill="currentColor" />
+              </svg>
+            </div>
+          </Link>
+
+          {/* Nav Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              to="/merchant/login.php"
+              className="hidden xs:inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl transition"
+            >
+              <LogIn className="w-4 h-4 text-slate-400" />
+              <span>Merchant Login</span>
             </Link>
 
-            {/* Nav Actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Link
-                to="/merchant/login.php"
-                className="hidden xs:inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl transition"
-              >
-                <LogIn className="w-4 h-4 text-slate-400" />
-                <span>Merchant Login</span>
-              </Link>
-
-              <Link
-                to="/merchant/login.php"
-                className="inline-flex items-center gap-2 bg-[#4f46e5] hover:bg-[#4338ca] active:scale-95 text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition cursor-pointer border border-indigo-400/20"
-              >
-                <FileText className="w-4 h-4 text-indigo-100" />
-                <span>API Docs</span>
-              </Link>
-            </div>
+            <Link
+              to="/docs/api.php"
+              className="inline-flex items-center gap-2 bg-[#4f46e5] hover:bg-[#4338ca] active:scale-95 text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition cursor-pointer border border-indigo-400/20"
+            >
+              <FileText className="w-4 h-4 text-indigo-100" />
+              <span>API Docs</span>
+            </Link>
           </div>
-        </header>
+        </div>
+      </header>
 
+      {/* Main Content Area - Shifted down to clear fixed header */}
+      <div className="pt-16 sm:pt-20 flex-1">
         {/* Hero Section */}
         <section className="pt-10 sm:pt-16 pb-14 sm:pb-20 px-4 sm:px-6 max-w-4xl mx-auto text-center">
           {/* Badge */}
@@ -109,7 +110,7 @@ export const LandingPage: React.FC = () => {
           {/* Action Buttons */}
           <div className="flex flex-col items-center gap-3 w-full max-w-md mx-auto">
             <Link
-              to="/merchant/login.php"
+              to="/docs/api.php"
               className="w-full bg-[#4f46e5] hover:bg-[#4338ca] active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-2xl shadow-xl shadow-indigo-600/35 transition flex items-center justify-center gap-2 border border-indigo-400/30 text-sm sm:text-base"
             >
               <FileText className="w-4 h-4 text-indigo-100" />
@@ -836,7 +837,7 @@ export const LandingPage: React.FC = () => {
 
                   {/* Official Channel Card */}
                   <a
-                    href="https://t.me/tkpaybd12"
+                    href="https://t.me/tkpay_BD"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-[#0c1424] border border-[#18233c] hover:border-indigo-500/40 rounded-2xl p-5 transition-all shadow-sm flex items-center justify-between group block"
@@ -849,7 +850,7 @@ export const LandingPage: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition">Official Channel</h3>
-                        <p className="text-slate-400 text-xs sm:text-sm mt-0.5 font-mono">@tkpaybd12</p>
+                        <p className="text-slate-400 text-xs sm:text-sm mt-0.5 font-mono">@tkpay_BD</p>
                         <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
                           <span>📢</span>
                           <span>Updates &amp; Announcements</span>
@@ -875,7 +876,7 @@ export const LandingPage: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mt-8">
                   <Link
-                    to="/merchant/login.php"
+                    to="/docs/api.php"
                     className="w-full sm:w-auto bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold text-xs sm:text-sm py-3.5 px-6 rounded-2xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <FileText className="w-4 h-4" />
@@ -883,7 +884,7 @@ export const LandingPage: React.FC = () => {
                   </Link>
 
                   <a
-                    href="https://t.me/tkpaybd12"
+                    href="https://t.me/tkpay_BD"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto bg-[#0c1424] hover:bg-[#131f38] text-white font-semibold text-xs sm:text-sm py-3.5 px-6 rounded-2xl border border-[#1e293b] hover:border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer"
@@ -930,7 +931,7 @@ export const LandingPage: React.FC = () => {
             <button onClick={() => scrollToSection('channels')} className="hover:text-white transition cursor-pointer">
               Channels
             </button>
-            <Link to="/merchant/login.php" className="hover:text-white transition cursor-pointer">
+            <Link to="/docs/api.php" className="hover:text-white transition cursor-pointer">
               API Docs
             </Link>
           </div>
@@ -938,7 +939,7 @@ export const LandingPage: React.FC = () => {
           {/* Telegram Links */}
           <div className="flex items-center justify-center gap-6 text-xs text-slate-400 font-medium mb-5">
             <a
-              href="https://t.me/tkpaybd12"
+              href="https://t.me/tkpay_BD"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 hover:text-white transition"

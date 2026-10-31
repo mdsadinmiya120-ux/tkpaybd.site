@@ -166,7 +166,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                     {gatewayView === 'BDT_SUPPORT' ? 'বিকাশ / নগদ পেমেন্ট সাপোর্ট' : 'Payment Gateway Service'}
                   </h3>
                   <p className="text-[11px] text-gray-400">
-                    {gatewayView === 'BDT_SUPPORT' ? 'টেলিগ্রাম @tkpaybd12 এর সাথে যোগাযোগ' : 'একাউন্ট স্ট্যাটাস ও অ্যাক্টিভেশন'}
+                    {gatewayView === 'BDT_SUPPORT' ? 'টেলিগ্রাম @tkpay_BD এর সাথে যোগাযোগ' : 'একাউন্ট স্ট্যাটাস ও অ্যাক্টিভেশন'}
                   </p>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                 {/* Action Buttons */}
                 <div className="space-y-2.5 pt-2">
                   <a
-                    href="https://t.me/tkpaybd12"
+                    href="https://t.me/tkpay_BD"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full bg-[#4f46e5] hover:bg-[#4338ca] text-white font-bold py-3.5 rounded-2xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm hover:shadow cursor-pointer no-underline"
@@ -272,10 +272,10 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                 <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-left">
                   <div>
                     <p className="text-[11px] font-bold text-gray-800">টেলিগ্রাম সাপোর্ট</p>
-                    <p className="font-mono text-xs font-bold text-blue-700">@tkpaybd12</p>
+                    <p className="font-mono text-xs font-bold text-blue-700">@tkpay_BD</p>
                   </div>
                   <a
-                    href="https://t.me/tkpaybd12"
+                    href="https://t.me/tkpay_BD"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 bg-[#229ED9] hover:bg-[#1E88E5] text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-2xs"
@@ -301,7 +301,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                   <div>
                     <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wider">Telegram Official Support</p>
                     <h4 className="font-extrabold text-sm sm:text-base">বিকাশ / নগদ পেমেন্ট সাপোর্ট</h4>
-                    <p className="text-[11px] text-blue-100">টেলিগ্রাম @tkpaybd12 এর সাথে যোগাযোগ করে পেমেন্ট সম্পন্ন করুন</p>
+                    <p className="text-[11px] text-blue-100">টেলিগ্রাম @tkpay_BD এর সাথে যোগাযোগ করে পেমেন্ট সম্পন্ন করুন</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0">
                     <MessageSquare className="w-6 h-6 text-white" />
@@ -313,10 +313,10 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[11px] font-bold text-gray-800">অফিসিয়াল টেলিগ্রাম:</p>
-                      <p className="font-mono text-sm font-extrabold text-blue-700">@tkpaybd12</p>
+                      <p className="font-mono text-sm font-extrabold text-blue-700">@tkpay_BD</p>
                     </div>
                     <a
-                      href="https://t.me/tkpaybd12"
+                      href="https://t.me/tkpay_BD"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 bg-[#229ED9] hover:bg-[#1E88E5] text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-sm transition"
@@ -327,7 +327,7 @@ export const InactiveView: React.FC<InactiveViewProps> = ({
                     </a>
                   </div>
                   <p className="text-[11px] text-gray-600">
-                    টেলিগ্রাম @tkpaybd12 এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। ৬০০ টাকা পেমেন্ট সম্পন্ন করে নিচের ফর্মে TrxID প্রদান করুন।
+                    টেলিগ্রাম @tkpay_BD এ মেসেজ দিলে আমাদের টিম সরাসরি বিকাশ বা নগদ একাউন্ট নম্বর সরবরাহ করবে। ৬০০ টাকা পেমেন্ট সম্পন্ন করে নিচের ফর্মে TrxID প্রদান করুন।
                   </p>
                 </div>
 
