@@ -12,8 +12,7 @@ import {
   HeartHandshake, 
   Search, 
   X,
-  AlertTriangle,
-  ShieldCheck
+  AlertTriangle
 } from 'lucide-react';
 import { BKASH_LOGO_URL, ROCKET_LOGO_URL, NAGAD_LOGO_URL } from '../constants/logos';
 import { getWalletDetailsForMethod, syncMerchantNumbersFromFirebase, getMerchantDepositNumbers, DepositWalletNumber } from '../utils/wallet';
@@ -369,28 +368,20 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                     {currentMethod} Deposit
                   </span>
                 </div>
-
-                <div className="flex items-center gap-1 text-[11px] bg-white/20 px-2 py-0.5 rounded-lg">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Verified</span>
-                </div>
               </div>
             </div>
 
-            {/* Wallet No Section - Displays ALL numbers saved for the selected method */}
+              {/* Wallet No Section - Displays single randomly rotated active number per refresh */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-gray-900 text-sm sm:text-base">
-                  <span>{currentMethod} ওয়ালেট নম্বরসমূহ</span>
+                  <span>{currentMethod} ওয়ালেট নম্বর</span>
                   <span className="text-red-500">*</span>
-                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md uppercase">
-                    {activeMethodNumbers.length}টি সক্রিয়
-                  </span>
                 </div>
               </div>
               
               <p className="text-xs sm:text-[13px] text-gray-800 leading-snug font-normal">
-                নিচের যে কোনো একটি <strong className="text-gray-900 font-extrabold">{isBkash ? 'বিকাশ' : isNagad ? 'নগদ' : 'রকেট'}</strong> নম্বরে টাকা পাঠান এবং লেনদেন সম্পন্ন করে নিচে TrxID লিখুন:
+                নিচের <strong className="text-gray-900 font-extrabold">{isBkash ? 'বিকাশ' : isNagad ? 'নগদ' : 'রকেট'}</strong> নম্বরে টাকা পাঠান এবং লেনদেন সম্পন্ন করে নিচে TrxID লিখুন:
               </p>
 
               {activeMethodNumbers.length === 0 ? (
@@ -399,14 +390,15 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {activeMethodNumbers.map((item, idx) => {
-                    const isCopied = copiedNumber === item.number;
-                    const labelType = item.label || 'Personal';
+                  {(() => {
+                    const activeItem = activeMethodNumbers.find(n => n.number === walletNumber) || activeMethodNumbers[0];
+                    const isCopied = copiedNumber === activeItem.number;
+                    const labelType = activeItem.label || 'Personal';
                     const isAgent = labelType === 'Agent';
 
                     return (
                       <div 
-                        key={item.id || idx}
+                        key={activeItem.id || 'random_active'}
                         className="p-3.5 bg-[#f8f9fa] border-2 border-gray-200/90 hover:border-emerald-500/80 rounded-2xl shadow-2xs transition-all flex items-center justify-between gap-3"
                       >
                         <div className="space-y-1 min-w-0 flex-1">
@@ -418,13 +410,13 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                             </span>
                           </div>
                           <div className="font-mono font-black text-lg sm:text-xl text-gray-900 tracking-wider truncate">
-                            {item.number}
+                            {activeItem.number}
                           </div>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() => handleCopyNumber(item.number)}
+                          onClick={() => handleCopyNumber(activeItem.number)}
                           className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 active:scale-95 transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
                           title="নম্বর কপি করুন"
                         >
@@ -440,7 +432,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                         </button>
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               )}
             </div>
