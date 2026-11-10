@@ -36,7 +36,7 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b16] text-white font-sans selection:bg-indigo-500/30 selection:text-indigo-200 flex flex-col justify-between relative">
+    <div className="min-h-screen overflow-x-hidden bg-[#070b16] text-white font-sans selection:bg-indigo-500/30 selection:text-indigo-200 flex flex-col justify-between relative">
       {/* Background radial gradient glow for premium dark fintech look */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[900px] h-[450px] bg-gradient-to-b from-indigo-600/15 via-blue-600/10 to-transparent blur-[120px] pointer-events-none -z-10" />
 
