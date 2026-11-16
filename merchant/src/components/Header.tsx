@@ -13,6 +13,7 @@ interface HeaderProps {
   allMerchants?: MerchantProfile[];
   isAccountActive?: boolean;
   isCommissionActive?: boolean;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -24,7 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   onSwitchMerchant,
   allMerchants: propAllMerchants = [],
   isAccountActive: propIsAccountActive,
-  isCommissionActive: propIsCommissionActive
+  isCommissionActive: propIsCommissionActive,
+  onLogout
 }) => {
   const [copied, setCopied] = useState(false);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
@@ -346,8 +348,16 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={() => {
                     setShowAccountDropdown(false);
-                    localStorage.removeItem('chaopaopay_merchant');
-                    window.location.reload();
+                    try {
+                      localStorage.setItem('chaopaopay_is_logged_in', 'false');
+                      localStorage.removeItem('chaopaopay_merchant');
+                      localStorage.removeItem('chaopaopay_active_tab');
+                    } catch (e) {}
+                    if (onLogout) {
+                      onLogout();
+                    } else {
+                      window.location.reload();
+                    }
                   }}
                   className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer border border-rose-200/80"
                 >

@@ -24,16 +24,13 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     try {
       const savedAuth = localStorage.getItem('chaopaopay_is_logged_in');
-      if (savedAuth === 'false') return false;
-      if (savedAuth === 'true') return true;
-      // Auto restore if merchant exists
       const savedMerchant = localStorage.getItem('chaopaopay_merchant');
-      if (savedMerchant) {
+      if (savedAuth === 'true' && savedMerchant) {
         const parsed = JSON.parse(savedMerchant);
         if (parsed && (parsed.merchantId || parsed.phone)) return true;
       }
     } catch (e) {}
-    return true; // Default logged in so user never gets logged out on refresh
+    return false;
   });
 
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -201,6 +198,7 @@ export default function App() {
 
   // Sync profile from chaopaopay_merchant and chaopaopay_all_merchants whenever another tab or Admin Panel updates storage
   useEffect(() => {
+    if (!isLoggedIn) return;
     const handleStorageChange = (e?: any) => {
       try {
         const currentId = merchant.merchantId ? merchant.merchantId.trim().toLowerCase() : '';
@@ -380,11 +378,11 @@ export default function App() {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('merchantUpdated', handleStorageChange);
     };
-  }, [merchant.merchantId]);
+  }, [merchant.merchantId, isLoggedIn]);
 
   // Real-time synchronization for Merchant Profile from Firebase Realtime Database
   useEffect(() => {
-    if (!database || !merchant.merchantId) return;
+    if (!isLoggedIn || !database || !merchant.merchantId) return;
     const currentId = merchant.merchantId.trim().toLowerCase();
     
     try {
@@ -536,7 +534,7 @@ export default function App() {
     } catch (e) {
       console.warn('Profile real-time sync error:', e);
     }
-  }, [database, merchant.merchantId]);
+  }, [database, merchant.merchantId, isLoggedIn]);
 
   // Real-time synchronization for Transactions List
   useEffect(() => {
@@ -558,14 +556,15 @@ export default function App() {
     }
   }, [merchant.merchantId]);
 
-  // Sync state to LocalStorage (do NOT overwrite Firebase database nodes automatically)
+  // Sync state to LocalStorage (only while logged in, do NOT overwrite Firebase database nodes automatically)
   useEffect(() => {
+    if (!isLoggedIn) return;
     try {
       localStorage.setItem('chaopaopay_merchant', JSON.stringify(merchant));
     } catch (e) {
       console.warn('LocalStorage sync error:', e);
     }
-  }, [merchant]);
+  }, [merchant, isLoggedIn]);
 
   useEffect(() => {
     try {
@@ -877,6 +876,18 @@ export default function App() {
     );
   }
 
+  const handleLogout = () => {
+    try {
+      localStorage.setItem('chaopaopay_is_logged_in', 'false');
+      localStorage.removeItem('chaopaopay_merchant');
+      localStorage.removeItem('chaopaopay_active_tab');
+    } catch (e) {}
+    setIsSidebarOpen(false);
+    setActiveTab('dashboard');
+    setIsLoggedIn(false);
+    setMerchant(initialMerchant);
+  };
+
   if (!isLoggedIn) {
     return (
       <LoginView 
@@ -887,9 +898,13 @@ export default function App() {
               localStorage.setItem('chaopaopay_merchant', JSON.stringify(customMerchant));
             } catch (e) {}
           }
+          try {
+            localStorage.setItem('chaopaopay_is_logged_in', 'true');
+          } catch (e) {}
+          setActiveTab('dashboard');
           setIsLoggedIn(true);
         }}
-        onNavigateToRegister={() => setIsLoggedIn(true)}
+        onNavigateToRegister={() => {}}
         onNavigateToForgot={() => {}}
       />
     );
@@ -908,7 +923,7 @@ export default function App() {
           hasUnreadPending={hasUnreadPending}
           onMarkDepositsAsViewed={() => setHasUnreadPending(false)}
           balance={merchant.balance}
-          onLogout={() => setIsLoggedIn(false)}
+          onLogout={handleLogout}
           onNavigateToTransactions={handleNavigateToTransactions}
           isPartnerAgentApproved={isPartnerAgentApproved}
           isAccountActive={isAccountActive}
@@ -1129,7 +1144,8 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setIsLoggedIn(false)}
+                  type="button"
+                  onClick={handleLogout}
                   className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-all cursor-pointer"
                 >
                   <span>🚪</span>
@@ -1161,6 +1177,7 @@ export default function App() {
           onSwitchMerchant={handleSwitchMerchant}
           isAccountActive={isAccountActive}
           isCommissionActive={merchant.isCommissionActive !== false && merchant.commissionStatus !== 'Inactive' && merchant.commissionStatus !== 'Deactive'}
+          onLogout={handleLogout}
         />
 
         <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-6 pb-20">

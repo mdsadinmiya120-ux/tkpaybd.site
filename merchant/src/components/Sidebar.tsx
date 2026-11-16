@@ -325,7 +325,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => {
+                  onClose();
                   if (onLogout) onLogout();
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-all cursor-pointer"
