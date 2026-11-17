@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KeyRound, Copy, Check, RefreshCw, Shield, Globe } from 'lucide-react';
 import { ApiKeyConfig } from '../types';
 
@@ -14,6 +14,11 @@ export const ApiKeysTab: React.FC<ApiKeysTabProps> = ({ apiKey, onUpdateApiKey }
   const [webhookUrl, setWebhookUrl] = useState(apiKey.webhookUrl);
   const [mode, setMode] = useState<'Live' | 'Sandbox'>(apiKey.mode);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setWebhookUrl(apiKey.webhookUrl);
+    setMode(apiKey.mode);
+  }, [apiKey.webhookUrl, apiKey.mode, apiKey.publicKey]);
 
   const handleCopy = (text: string, type: 'public' | 'secret') => {
     navigator.clipboard.writeText(text);

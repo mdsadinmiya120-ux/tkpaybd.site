@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Wifi, ShieldAlert, Lock, ShieldCheck } from 'lucide-react';
 import { MerchantProfile } from '../types';
 import { database } from '../firebase';
-import { ref, get } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
+import { syncMerchantNumbersFromFirebase } from '../utils/wallet';
 
 interface LoginViewProps {
   onLoginSuccess: (customMerchant?: MerchantProfile) => void;
@@ -218,10 +219,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
         }
       });
 
-      // 4. Firebase directory and merchants lookup with strict timeout safeguard
+      // 4. Firebase directory and merchants lookup with mobile-friendly timeout safeguard
       if (database) {
         try {
-          const fetchWithTimeout = async (promise: Promise<any>, timeoutMs = 2000) => {
+          const fetchWithTimeout = async (promise: Promise<any>, timeoutMs = 8000) => {
             let timeoutId: any;
             const timeoutPromise = new Promise((_, reject) => {
               timeoutId = setTimeout(() => reject(new Error('Timeout')), timeoutMs);
@@ -242,18 +243,26 @@ export const LoginView: React.FC<LoginViewProps> = ({
             if (dirVal && typeof dirVal === 'object') {
               Object.entries(dirVal).forEach(([k, v]: [string, any]) => {
                 if (v && typeof v === 'object') {
-                  addCandidate({ merchantId: k, ...v });
+                  addCandidate({ merchantId: v.merchantId || k, ...v });
                 }
               });
             }
           }
 
           const targetId = cleanIdentifier;
-          let profSnap = await fetchWithTimeout(get(ref(database, `merchants/${targetId}/profile`)));
-          if (!profSnap || !profSnap.exists()) {
-            profSnap = await fetchWithTimeout(get(ref(database, `merchants/${targetId.toUpperCase()}/profile`)));
+          const profilePaths = [
+            `merchants/${targetId}/profile`,
+            `merchants/${targetId.toLowerCase()}/profile`,
+            `merchants/${targetId.toUpperCase()}/profile`
+          ];
+          for (const p of profilePaths) {
+            const profSnap = await fetchWithTimeout(get(ref(database, p)), 5000);
+            if (profSnap && profSnap.exists()) {
+              const val = profSnap.val();
+              addCandidate({ merchantId: val?.merchantId || targetId, ...val });
+              break;
+            }
           }
-          if (profSnap && profSnap.exists()) addCandidate({ merchantId: targetId, ...profSnap.val() });
         } catch (e) {
           console.warn('Firebase directory check warning:', e);
         }
@@ -314,73 +323,112 @@ export const LoginView: React.FC<LoginViewProps> = ({
         return;
       }
 
+      // Hydrate latest profile & deposit numbers directly from Firebase for this matched merchant
+      let hydratedMatch: any = { ...match };
+      if (database && match.merchantId) {
+        try {
+          const mOrig = String(match.merchantId).trim();
+          const mLower = mOrig.toLowerCase();
+          const mUpper = mOrig.toUpperCase();
+          const profileSnaps = await Promise.allSettled([
+            get(ref(database, `merchants/${mOrig}/profile`)),
+            get(ref(database, `merchants/${mLower}/profile`)),
+            get(ref(database, `merchants/${mUpper}/profile`))
+          ]);
+          for (const res of profileSnaps) {
+            if (res.status === 'fulfilled' && res.value && res.value.exists()) {
+              hydratedMatch = { ...hydratedMatch, ...res.value.val() };
+            }
+          }
+          await syncMerchantNumbersFromFirebase(mOrig).catch(() => null);
+        } catch (e) {}
+      }
+
       const isMasterAgent = Boolean(
-        match.merchantId === 'S01926516246' ||
-        match.merchantId === 'M20241018' ||
-        match.phone === '01926516246' ||
-        match.phone === '+8801926516246' ||
-        match.email === 'sadin@tkpaybd.site' ||
-        match.email === 'admin@tkpaybd.site' ||
-        match.email === 'mdsadinmiya120@gmail.com'
+        hydratedMatch.merchantId === 'S01926516246' ||
+        hydratedMatch.merchantId === 'M20241018' ||
+        hydratedMatch.phone === '01926516246' ||
+        hydratedMatch.phone === '+8801926516246' ||
+        hydratedMatch.email === 'sadin@tkpaybd.site' ||
+        hydratedMatch.email === 'admin@tkpaybd.site' ||
+        hydratedMatch.email === 'mdsadinmiya120@gmail.com'
       );
 
-      // Cache match in localStorage
-      try {
-        const saved = localStorage.getItem('chaopaopay_all_merchants');
-        const list = saved ? JSON.parse(saved) : [];
-        const updatedMerchants = [match, ...list.filter((m: any) => m.merchantId !== match.merchantId)];
-        localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(updatedMerchants));
-      } catch (e) {}
-
       // REAL BALANCE ONLY - STRICTLY NO DEMO AMOUNTS (Starts at 0.00 unless explicitly loaded)
-      const realBalance = (match.balance !== undefined && match.balance !== null && !isNaN(Number(match.balance))) ? Number(match.balance) : 0.00;
-      const rawPayin = match.commissionPayin !== undefined ? match.commissionPayin : (match.payinFeePercent !== undefined ? match.payinFeePercent : (match.commission !== undefined ? match.commission : 0));
+      const realBalance = (hydratedMatch.balance !== undefined && hydratedMatch.balance !== null && !isNaN(Number(hydratedMatch.balance))) ? Number(hydratedMatch.balance) : 0.00;
+      const rawPayin = hydratedMatch.commissionPayin !== undefined ? hydratedMatch.commissionPayin : (hydratedMatch.payinFeePercent !== undefined ? hydratedMatch.payinFeePercent : (hydratedMatch.commission !== undefined ? hydratedMatch.commission : 0));
       const realPayin = !isNaN(Number(rawPayin)) ? Number(rawPayin) : 0.00;
 
-      const rawPayout = match.commissionPayout !== undefined ? match.commissionPayout : (match.payoutFeePercent !== undefined ? match.payoutFeePercent : 0);
+      const rawPayout = hydratedMatch.commissionPayout !== undefined ? hydratedMatch.commissionPayout : (hydratedMatch.payoutFeePercent !== undefined ? hydratedMatch.payoutFeePercent : 0);
       const realPayout = !isNaN(Number(rawPayout)) ? Number(rawPayout) : 0.00;
 
-      const isExplicitInactive = match.isActive === false || match.status === 'Inactive' || match.accountStatus === 'Inactive';
+      const isExplicitInactive = hydratedMatch.isActive === false || hydratedMatch.status === 'Inactive' || hydratedMatch.accountStatus === 'Inactive';
       const loginIsActive = isExplicitInactive ? false : Boolean(
-        match.isActive === true || 
-        match.status === 'Active' || 
-        match.accountStatus === 'Active' || 
-        match.partnershipStatus === 'Approved' || 
-        match.isApproved === true ||
+        hydratedMatch.isActive === true || 
+        hydratedMatch.status === 'Active' || 
+        hydratedMatch.accountStatus === 'Active' || 
+        hydratedMatch.partnershipStatus === 'Approved' || 
+        hydratedMatch.isApproved === true ||
         isMasterAgent
       );
 
+      const isCommAct = (hydratedMatch.isCommissionActive === false || hydratedMatch.commissionStatus === 'Inactive' || hydratedMatch.commissionStatus === 'Deactive') ? false : true;
+
       const foundMerchant: MerchantProfile = {
-        merchantId: match.merchantId,
-        name: match.name || (isMasterAgent ? 'Master Agent' : 'Merchant Agent'),
-        email: match.email || `${match.merchantId.toLowerCase()}@tkpaybd.site`,
-        phone: match.phone || cleanIdentifier,
-        password: match.password || (isMasterAgent ? 'Sadin120' : 'user123'),
-        avatar: isMasterAgent ? '👑' : 'M',
+        ...hydratedMatch,
+        merchantId: hydratedMatch.merchantId,
+        name: hydratedMatch.name || (isMasterAgent ? 'Master Agent' : 'Merchant Agent'),
+        email: hydratedMatch.email || `${String(hydratedMatch.merchantId).toLowerCase()}@tkpaybd.site`,
+        phone: hydratedMatch.phone || cleanIdentifier,
+        password: hydratedMatch.password || cleanPassword || (isMasterAgent ? 'Sadin120' : 'user123'),
+        avatar: hydratedMatch.avatar || (isMasterAgent ? '👑' : 'M'),
         balance: realBalance,
-        totalDeposits: typeof match.totalDeposits === 'number' ? match.totalDeposits : 0.00,
-        depositCount: typeof match.depositCount === 'number' ? match.depositCount : 0,
-        todayDeposits: typeof match.todayDeposits === 'number' ? match.todayDeposits : 0.00,
-        totalWithdrawals: typeof match.totalWithdrawals === 'number' ? match.totalWithdrawals : 0.00,
-        withdrawalCount: typeof match.withdrawalCount === 'number' ? match.withdrawalCount : 0,
-        todayWithdrawals: typeof match.todayWithdrawals === 'number' ? match.todayWithdrawals : 0.00,
+        totalDeposits: typeof hydratedMatch.totalDeposits === 'number' ? hydratedMatch.totalDeposits : 0.00,
+        depositCount: typeof hydratedMatch.depositCount === 'number' ? hydratedMatch.depositCount : 0,
+        todayDeposits: typeof hydratedMatch.todayDeposits === 'number' ? hydratedMatch.todayDeposits : 0.00,
+        totalWithdrawals: typeof hydratedMatch.totalWithdrawals === 'number' ? hydratedMatch.totalWithdrawals : 0.00,
+        withdrawalCount: typeof hydratedMatch.withdrawalCount === 'number' ? hydratedMatch.withdrawalCount : 0,
+        todayWithdrawals: typeof hydratedMatch.todayWithdrawals === 'number' ? hydratedMatch.todayWithdrawals : 0.00,
         kycStatus: loginIsActive ? 'Verified' : 'Unverified',
-        isAdminAgent: isMasterAgent || Boolean(match.isAdminAgent),
+        isAdminAgent: isMasterAgent || Boolean(hydratedMatch.isAdminAgent),
         isPartnerAgent: isMasterAgent || loginIsActive,
-        partnershipStatus: isMasterAgent ? 'Approved' : (loginIsActive ? 'Approved' : 'Inactive'),
-        accountType: match.accountType || (isMasterAgent ? 'Partnership Agent' : 'Payment Gateway Use'),
-        feeType: match.feeType || (match.accountType === 'Payment Gateway Use' ? 'Charge' : 'Commission'),
+        partnershipStatus: hydratedMatch.partnershipStatus || (isMasterAgent ? 'Approved' : (loginIsActive ? 'Approved' : 'Inactive')),
+        accountType: hydratedMatch.accountType || (isMasterAgent ? 'Partnership Agent' : 'Payment Gateway Use'),
+        feeType: hydratedMatch.feeType || (hydratedMatch.accountType === 'Payment Gateway Use' ? 'Charge' : 'Commission'),
         commissionPayin: realPayin,
         commissionPayout: realPayout,
+        isCommissionActive: isCommAct,
+        commissionStatus: isCommAct ? 'Active' : 'Inactive',
         isActive: loginIsActive,
         status: loginIsActive ? 'Active' : 'Inactive',
         accountStatus: loginIsActive ? 'Active' : 'Inactive',
         isApproved: loginIsActive
       };
 
+      // Cache match in localStorage and clear any stale previous user's transactions
       try {
+        localStorage.removeItem('chaopaopay_transactions');
+        const saved = localStorage.getItem('chaopaopay_all_merchants');
+        const list = saved ? JSON.parse(saved) : [];
+        const updatedMerchants = [foundMerchant, ...list.filter((m: any) => String(m.merchantId || '').trim().toLowerCase() !== String(foundMerchant.merchantId).trim().toLowerCase())];
+        localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(updatedMerchants));
         localStorage.setItem('chaopaopay_merchant', JSON.stringify(foundMerchant));
+        if (Array.isArray(foundMerchant.depositNumbers) && foundMerchant.depositNumbers.length > 0) {
+          localStorage.setItem(`chaopaopay_merchant_numbers_${foundMerchant.merchantId.trim().toLowerCase()}`, JSON.stringify(foundMerchant.depositNumbers));
+        }
       } catch (e) {}
+
+      // Ensure directory & profile nodes exist in Firebase so any future device can log in with all data
+      if (database && foundMerchant.merchantId) {
+        const cleanId = foundMerchant.merchantId.trim();
+        const lowerId = cleanId.toLowerCase();
+        Promise.allSettled([
+          set(ref(database, `merchants/${cleanId}/profile`), foundMerchant),
+          set(ref(database, `merchants/${lowerId}/profile`), foundMerchant),
+          set(ref(database, `merchants_directory/${cleanId}`), foundMerchant),
+          set(ref(database, `merchants_directory/${lowerId}`), foundMerchant)
+        ]).catch(() => {});
+      }
 
       setLoading(false);
       onLoginSuccess(foundMerchant);

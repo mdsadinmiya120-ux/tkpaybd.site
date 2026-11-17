@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, ShieldCheck, Check, Wallet, Plus, Trash2, Shuffle, CheckCircle2, Copy } from 'lucide-react';
 import { MerchantProfile, DepositWalletNumber } from '../types';
 import { BKASH_LOGO_URL, NAGAD_LOGO_URL, ROCKET_LOGO_URL } from '../constants/logos';
-import { getMerchantDepositNumbers, saveMerchantDepositNumbers } from '../utils/wallet';
+import { getMerchantDepositNumbers, saveMerchantDepositNumbers, syncMerchantNumbersFromFirebase } from '../utils/wallet';
 
 interface SettingsTabProps {
   merchant: MerchantProfile;
@@ -14,6 +14,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ merchant, onUpdateMerc
   const [email, setEmail] = useState(merchant.email);
   const [phone, setPhone] = useState(merchant.phone);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setName(merchant.name);
+    setEmail(merchant.email);
+    setPhone(merchant.phone);
+  }, [merchant.merchantId, merchant.name, merchant.email, merchant.phone]);
 
   // Merchant-specific deposit numbers state
   const [myNumbers, setMyNumbers] = useState<DepositWalletNumber[]>(() => {
@@ -32,6 +38,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ merchant, onUpdateMerc
       setMyNumbers(getMerchantDepositNumbers(merchant.merchantId));
     };
     refreshNumbers();
+    syncMerchantNumbersFromFirebase(merchant.merchantId).then((list) => {
+      if (list) setMyNumbers(list);
+    });
     window.addEventListener('depositNumbersUpdated', refreshNumbers);
     window.addEventListener('storage', refreshNumbers);
     return () => {

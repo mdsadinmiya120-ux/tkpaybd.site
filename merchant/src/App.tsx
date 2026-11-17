@@ -16,9 +16,10 @@ import { LoginView } from './components/LoginView';
 import { InactiveView } from './components/InactiveView';
 import { initialMerchant, initialTransactions, initialApiKey } from './mockData';
 import { MerchantProfile, Transaction, ApiKeyConfig } from './types';
-import { ref, set, onValue } from 'firebase/database';
+import { ref, set, get, onValue } from 'firebase/database';
 import { database } from './firebase';
 import { APP_LOGO_URL } from './constants/logos';
+import { syncMerchantNumbersFromFirebase, subscribeMerchantNumbersFromFirebase } from './utils/wallet';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -89,7 +90,35 @@ export default function App() {
     return initialTransactions;
   });
 
-  const [apiKey, setApiKey] = useState<ApiKeyConfig>(initialApiKey);
+  const buildDefaultApiKeyForMerchant = (mId?: string): ApiKeyConfig => {
+    const clean = (mId || '').trim();
+    const upper = clean.toUpperCase();
+    if (!clean || upper === 'S01926516246' || upper === 'M20241018') {
+      return initialApiKey;
+    }
+    const seed = upper.replace(/[^A-Z0-9]/g, '').toLowerCase() || 'merchant';
+    return {
+      publicKey: `pk_live_${seed}_tkpaybd`,
+      secretKey: `sk_live_${seed}_${seed.split('').reverse().join('')}9x`,
+      webhookUrl: initialApiKey.webhookUrl,
+      mode: 'Live',
+      ipWhitelisted: 'All IPs Allowed',
+      createdAt: new Date().toISOString()
+    };
+  };
+
+  const [apiKey, setApiKey] = useState<ApiKeyConfig>(() => {
+    try {
+      const savedM = localStorage.getItem('chaopaopay_merchant');
+      const mId = savedM ? JSON.parse(savedM)?.merchantId : '';
+      if (mId) {
+        const savedKey = localStorage.getItem(`chaopaopay_apikey_${String(mId).trim().toLowerCase()}`);
+        if (savedKey) return JSON.parse(savedKey);
+        return buildDefaultApiKeyForMerchant(mId);
+      }
+    } catch (e) {}
+    return initialApiKey;
+  });
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   // Persistent checkout data so page refresh on payment screen never exits
@@ -536,25 +565,133 @@ export default function App() {
     }
   }, [database, merchant.merchantId, isLoggedIn]);
 
-  // Real-time synchronization for Transactions List
+  // Real-time synchronization for Transactions List across devices
   useEffect(() => {
-    if (!database || !merchant.merchantId) return;
-    try {
-      const txRef = ref(database, `merchants/${merchant.merchantId}/transactions`);
-      const unsub = onValue(txRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const list = Object.values(data) as Transaction[];
-          // Sort by date descending
-          const sorted = list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setTransactions(sorted);
-        }
+    if (!isLoggedIn || !database || !merchant.merchantId) return;
+    const origId = merchant.merchantId.trim();
+    const lowerId = origId.toLowerCase();
+    const txMap: Record<string, Record<string, Transaction>> = {
+      orig: {},
+      lower: {},
+      all: {}
+    };
+
+    const mergeAndSet = () => {
+      const mergedById = new Map<string, Transaction>();
+      const sources = isSuperAdmin
+        ? [txMap.all, txMap.orig, txMap.lower]
+        : [txMap.orig, txMap.lower];
+      sources.forEach(src => {
+        Object.values(src).forEach(tx => {
+          if (tx && tx.transactionId) {
+            mergedById.set(tx.transactionId, tx);
+          }
+        });
       });
-      return () => unsub();
+      const list = Array.from(mergedById.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setTransactions(list);
+    };
+
+    try {
+      const unsubOrig = onValue(ref(database, `merchants/${origId}/transactions`), (snapshot) => {
+        txMap.orig = snapshot.exists() ? (snapshot.val() as Record<string, Transaction>) : {};
+        mergeAndSet();
+      });
+
+      const unsubLower = origId !== lowerId
+        ? onValue(ref(database, `merchants/${lowerId}/transactions`), (snapshot) => {
+            txMap.lower = snapshot.exists() ? (snapshot.val() as Record<string, Transaction>) : {};
+            mergeAndSet();
+          })
+        : () => {};
+
+      const unsubAll = isSuperAdmin
+        ? onValue(ref(database, 'all_transactions'), (snapshot) => {
+            txMap.all = snapshot.exists() ? (snapshot.val() as Record<string, Transaction>) : {};
+            mergeAndSet();
+          })
+        : () => {};
+
+      return () => {
+        unsubOrig();
+        unsubLower();
+        unsubAll();
+      };
     } catch (e) {
       console.warn('Transactions real-time sync error:', e);
     }
-  }, [merchant.merchantId]);
+  }, [merchant.merchantId, isLoggedIn, isSuperAdmin]);
+
+  // Real-time synchronization for Merchant API Key & Webhook URL across devices
+  useEffect(() => {
+    if (!isLoggedIn || !merchant.merchantId) return;
+    const origId = merchant.merchantId.trim();
+    const lowerId = origId.toLowerCase();
+    const localStorageKey = `chaopaopay_apikey_${lowerId}`;
+
+    // Load local cached key first if available, else deterministic default
+    let fallbackKey = buildDefaultApiKeyForMerchant(origId);
+    try {
+      const saved = localStorage.getItem(localStorageKey);
+      if (saved) fallbackKey = JSON.parse(saved);
+    } catch (e) {}
+    setApiKey(fallbackKey);
+
+    if (!database) return;
+
+    let seeded = false;
+    const unsubOrig = onValue(ref(database, `merchants/${origId}/api_key`), (snap) => {
+      if (snap.exists()) {
+        const remoteKey = snap.val() as ApiKeyConfig;
+        setApiKey(remoteKey);
+        try {
+          localStorage.setItem(localStorageKey, JSON.stringify(remoteKey));
+        } catch (e) {}
+      } else if (!seeded) {
+        seeded = true;
+        // Check lowercase path before seeding default
+        get(ref(database, `merchants/${lowerId}/api_key`)).then((lowerSnap) => {
+          if (lowerSnap.exists()) {
+            const remoteKey = lowerSnap.val() as ApiKeyConfig;
+            setApiKey(remoteKey);
+            try {
+              localStorage.setItem(localStorageKey, JSON.stringify(remoteKey));
+            } catch (e) {}
+          } else {
+            set(ref(database, `merchants/${origId}/api_key`), fallbackKey).catch(() => {});
+            set(ref(database, `merchants/${lowerId}/api_key`), fallbackKey).catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    });
+
+    const unsubLower = origId !== lowerId
+      ? onValue(ref(database, `merchants/${lowerId}/api_key`), (snap) => {
+          if (snap.exists()) {
+            const remoteKey = snap.val() as ApiKeyConfig;
+            setApiKey(remoteKey);
+            try {
+              localStorage.setItem(localStorageKey, JSON.stringify(remoteKey));
+            } catch (e) {}
+          }
+        })
+      : () => {};
+
+    return () => {
+      unsubOrig();
+      unsubLower();
+    };
+  }, [merchant.merchantId, isLoggedIn]);
+
+  // Real-time synchronization for Merchant Deposit Wallet Numbers across devices
+  useEffect(() => {
+    if (!isLoggedIn || !merchant.merchantId) return;
+    syncMerchantNumbersFromFirebase(merchant.merchantId).catch(() => null);
+    const unsub = subscribeMerchantNumbersFromFirebase(merchant.merchantId);
+    return () => unsub();
+  }, [merchant.merchantId, isLoggedIn]);
 
   // Sync state to LocalStorage (only while logged in, do NOT overwrite Firebase database nodes automatically)
   useEffect(() => {
@@ -567,26 +704,74 @@ export default function App() {
   }, [merchant, isLoggedIn]);
 
   useEffect(() => {
+    if (!isLoggedIn) return;
     try {
       localStorage.setItem('chaopaopay_transactions', JSON.stringify(transactions));
     } catch (e) {
       console.warn(e);
     }
-  }, [transactions]);
+  }, [transactions, isLoggedIn]);
 
-  // Sync to Firebase in background
+  // Sync to Firebase in background (writes to normalized paths for cross-device consistency)
   const syncToFirebase = (newTx?: Transaction, updatedMerchant?: MerchantProfile) => {
     try {
       if (newTx && database) {
-        const txRef = ref(database, `merchants/${merchant.merchantId}/transactions/${newTx.transactionId}`);
-        set(txRef, newTx).catch(() => {});
+        const txMerchantId = (newTx.merchantId || merchant.merchantId || '').trim();
+        const txLowerId = txMerchantId.toLowerCase();
+        if (txMerchantId) {
+          set(ref(database, `merchants/${txMerchantId}/transactions/${newTx.transactionId}`), newTx).catch(() => {});
+          if (txLowerId !== txMerchantId) {
+            set(ref(database, `merchants/${txLowerId}/transactions/${newTx.transactionId}`), newTx).catch(() => {});
+          }
+        }
+        set(ref(database, `all_transactions/${newTx.transactionId}`), newTx).catch(() => {});
       }
-      if (updatedMerchant && database) {
-        const merchantRef = ref(database, `merchants/${updatedMerchant.merchantId}/profile`);
-        set(merchantRef, updatedMerchant).catch(() => {});
+      if (updatedMerchant && database && updatedMerchant.merchantId) {
+        const mId = updatedMerchant.merchantId.trim();
+        const mLowerId = mId.toLowerCase();
+        set(ref(database, `merchants/${mId}/profile`), updatedMerchant).catch(() => {});
+        set(ref(database, `merchants_directory/${mId}`), updatedMerchant).catch(() => {});
+        if (mLowerId !== mId) {
+          set(ref(database, `merchants/${mLowerId}/profile`), updatedMerchant).catch(() => {});
+          set(ref(database, `merchants_directory/${mLowerId}`), updatedMerchant).catch(() => {});
+        }
+      }
+      if (updatedMerchant && updatedMerchant.merchantId) {
+        try {
+          const savedAll = localStorage.getItem('chaopaopay_all_merchants');
+          const list = savedAll ? JSON.parse(savedAll) : [];
+          if (Array.isArray(list)) {
+            const idx = list.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === updatedMerchant.merchantId.trim().toLowerCase());
+            if (idx >= 0) list[idx] = updatedMerchant;
+            else list.push(updatedMerchant);
+            localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
+          }
+        } catch (e) {}
       }
     } catch (e) {
       console.warn('Firebase background sync warning:', e);
+    }
+  };
+
+  const handleUpdateMerchant = (updated: MerchantProfile) => {
+    setMerchant(updated);
+    syncToFirebase(undefined, updated);
+  };
+
+  const handleUpdateApiKey = (newKey: ApiKeyConfig) => {
+    setApiKey(newKey);
+    const origId = (merchant.merchantId || '').trim();
+    const lowerId = origId.toLowerCase();
+    if (origId) {
+      try {
+        localStorage.setItem(`chaopaopay_apikey_${lowerId}`, JSON.stringify(newKey));
+      } catch (e) {}
+      if (database) {
+        set(ref(database, `merchants/${origId}/api_key`), newKey).catch(() => {});
+        if (lowerId !== origId) {
+          set(ref(database, `merchants/${lowerId}/api_key`), newKey).catch(() => {});
+        }
+      }
     }
   };
 
@@ -648,56 +833,68 @@ export default function App() {
       const approvedAmount = targetTx.amount;
 
       // 1. Update the merchant's balance in the global directory (localStorage + Firebase)
+      const applyBalanceUpdate = (mData: any) => {
+        const updatedM = {
+          ...merchant,
+          ...mData,
+          merchantId: targetMerchantId || mData.merchantId,
+          balance: (Number(mData.balance) || 0) + approvedAmount,
+          totalDeposits: (Number(mData.totalDeposits) || 0) + approvedAmount,
+          depositCount: (Number(mData.depositCount) || 0) + 1,
+          todayDeposits: (Number(mData.todayDeposits) || 0) + approvedAmount,
+          isActive: true,
+          status: 'Active',
+          isApproved: true,
+          partnershipStatus: 'Approved',
+          isPartnerAgent: true,
+        };
+        try {
+          const savedAll = localStorage.getItem('chaopaopay_all_merchants');
+          let list = savedAll ? JSON.parse(savedAll) : [];
+          if (!Array.isArray(list)) list = [];
+          const mIdx = list.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.trim().toLowerCase());
+          if (mIdx >= 0) list[mIdx] = updatedM;
+          else list.push(updatedM);
+          localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
+        } catch (e) {}
+
+        if (targetMerchantId?.trim().toLowerCase() === merchant.merchantId.trim().toLowerCase()) {
+          setMerchant(updatedM);
+          try {
+            localStorage.setItem('chaopaopay_merchant', JSON.stringify(updatedM));
+          } catch (e) {}
+        }
+
+        syncToFirebase(targetTx, updatedM);
+      };
+
       try {
         const savedAll = localStorage.getItem('chaopaopay_all_merchants');
-        if (savedAll) {
-          let list = JSON.parse(savedAll);
-          if (Array.isArray(list)) {
-            const mIdx = list.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.toLowerCase());
-            const mData = mIdx >= 0 ? list[mIdx] : merchant;
-            const updatedM = {
-              ...merchant,
-              ...mData,
-              balance: (mData.balance || 0) + approvedAmount,
-              totalDeposits: (mData.totalDeposits || 0) + approvedAmount,
-              depositCount: (mData.depositCount || 0) + 1,
-              todayDeposits: (mData.todayDeposits || 0) + approvedAmount,
-              isActive: true,
-              status: 'Active',
-              isApproved: true,
-              partnershipStatus: 'Approved',
-              isPartnerAgent: true,
-            };
-            if (mIdx >= 0) {
-              list[mIdx] = updatedM;
+        const list = savedAll ? JSON.parse(savedAll) : [];
+        const match = Array.isArray(list)
+          ? list.find((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.trim().toLowerCase())
+          : null;
+        if (match) {
+          applyBalanceUpdate(match);
+        } else if (database && targetMerchantId) {
+          get(ref(database, `merchants/${targetMerchantId}/profile`)).then((snap) => {
+            if (snap.exists()) {
+              applyBalanceUpdate(snap.val());
             } else {
-              list.push(updatedM);
+              get(ref(database, `merchants_directory/${targetMerchantId}`)).then((dSnap) => {
+                applyBalanceUpdate(dSnap.exists() ? dSnap.val() : { merchantId: targetMerchantId, balance: 0 });
+              }).catch(() => applyBalanceUpdate({ merchantId: targetMerchantId, balance: 0 }));
             }
-            localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
-            
-            // If the target merchant is the current logged-in user, update state & storage
-            if (targetMerchantId?.toLowerCase() === merchant.merchantId.toLowerCase()) {
-              setMerchant(updatedM);
-              try {
-                localStorage.setItem('chaopaopay_merchant', JSON.stringify(updatedM));
-              } catch (e) {}
-            }
-            
-            // Sync updated merchant to Firebase
-            if (database && targetMerchantId) {
-              set(ref(database, `merchants_directory/${targetMerchantId}`), updatedM).catch(() => {});
-              set(ref(database, `merchants/${targetMerchantId}/profile`), updatedM).catch(() => {});
-            }
-          }
+          }).catch(() => applyBalanceUpdate({ merchantId: targetMerchantId, balance: 0 }));
+        } else {
+          applyBalanceUpdate(merchant);
         }
       } catch (e) {
         console.warn('Approval storage update error:', e);
       }
 
       // 2. Sync the transaction status to Firebase
-      if (database && targetMerchantId) {
-        set(ref(database, `merchants/${targetMerchantId}/transactions/${targetTx.transactionId}`), targetTx).catch(() => {});
-      }
+      syncToFirebase(targetTx);
 
       // Trigger event for other components/tabs
       window.dispatchEvent(new CustomEvent('merchantUpdated'));
@@ -741,9 +938,7 @@ export default function App() {
       const newTransactions = [...prev];
       newTransactions[txIndex] = targetTx;
 
-      if (database && targetTx.merchantId) {
-        set(ref(database, `merchants/${targetTx.merchantId}/transactions/${targetTx.transactionId}`), targetTx).catch(() => {});
-      }
+      syncToFirebase(targetTx);
       return newTransactions;
     });
   };
@@ -760,52 +955,66 @@ export default function App() {
       const targetMerchantId = targetTx.merchantId;
       const rejectedAmount = targetTx.amount;
 
+      const applyRefundUpdate = (mData: any) => {
+        const updatedM = {
+          ...merchant,
+          ...mData,
+          merchantId: targetMerchantId || mData.merchantId,
+          balance: (Number(mData.balance) || 0) + rejectedAmount,
+          totalWithdrawals: Math.max(0, (Number(mData.totalWithdrawals) || 0) - rejectedAmount),
+          todayWithdrawals: Math.max(0, (Number(mData.todayWithdrawals) || 0) - rejectedAmount),
+          isActive: true,
+          status: 'Active',
+          isApproved: true,
+          partnershipStatus: 'Approved',
+          isPartnerAgent: true,
+        };
+        try {
+          const savedAll = localStorage.getItem('chaopaopay_all_merchants');
+          let list = savedAll ? JSON.parse(savedAll) : [];
+          if (!Array.isArray(list)) list = [];
+          const mIdx = list.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.trim().toLowerCase());
+          if (mIdx >= 0) list[mIdx] = updatedM;
+          else list.push(updatedM);
+          localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
+        } catch (e) {}
+
+        if (targetMerchantId?.trim().toLowerCase() === merchant.merchantId.trim().toLowerCase()) {
+          setMerchant(updatedM);
+          try {
+            localStorage.setItem('chaopaopay_merchant', JSON.stringify(updatedM));
+          } catch (e) {}
+        }
+
+        syncToFirebase(targetTx, updatedM);
+      };
+
       try {
         const savedAll = localStorage.getItem('chaopaopay_all_merchants');
-        if (savedAll) {
-          let list = JSON.parse(savedAll);
-          if (Array.isArray(list)) {
-            const mIdx = list.findIndex((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.toLowerCase());
-            const mData = mIdx >= 0 ? list[mIdx] : merchant;
-            const updatedM = {
-              ...merchant,
-              ...mData,
-              balance: (mData.balance || 0) + rejectedAmount,
-              totalWithdrawals: (mData.totalWithdrawals || 0) - rejectedAmount,
-              todayWithdrawals: (mData.todayWithdrawals || 0) - rejectedAmount,
-              isActive: true,
-              status: 'Active',
-              isApproved: true,
-              partnershipStatus: 'Approved',
-              isPartnerAgent: true,
-            };
-            if (mIdx >= 0) {
-              list[mIdx] = updatedM;
+        const list = savedAll ? JSON.parse(savedAll) : [];
+        const match = Array.isArray(list)
+          ? list.find((m: any) => m.merchantId && m.merchantId.trim().toLowerCase() === targetMerchantId?.trim().toLowerCase())
+          : null;
+        if (match) {
+          applyRefundUpdate(match);
+        } else if (database && targetMerchantId) {
+          get(ref(database, `merchants/${targetMerchantId}/profile`)).then((snap) => {
+            if (snap.exists()) {
+              applyRefundUpdate(snap.val());
             } else {
-              list.push(updatedM);
+              get(ref(database, `merchants_directory/${targetMerchantId}`)).then((dSnap) => {
+                applyRefundUpdate(dSnap.exists() ? dSnap.val() : { merchantId: targetMerchantId, balance: 0 });
+              }).catch(() => applyRefundUpdate({ merchantId: targetMerchantId, balance: 0 }));
             }
-            localStorage.setItem('chaopaopay_all_merchants', JSON.stringify(list));
-            
-            if (targetMerchantId?.toLowerCase() === merchant.merchantId.toLowerCase()) {
-              setMerchant(updatedM);
-              try {
-                localStorage.setItem('chaopaopay_merchant', JSON.stringify(updatedM));
-              } catch (e) {}
-            }
-            
-            if (database && targetMerchantId) {
-              set(ref(database, `merchants_directory/${targetMerchantId}`), updatedM).catch(() => {});
-              set(ref(database, `merchants/${targetMerchantId}/profile`), updatedM).catch(() => {});
-            }
-          }
+          }).catch(() => applyRefundUpdate({ merchantId: targetMerchantId, balance: 0 }));
+        } else {
+          applyRefundUpdate(merchant);
         }
       } catch (e) {
         console.warn('Reject storage update error:', e);
       }
 
-      if (database && targetMerchantId) {
-        set(ref(database, `merchants/${targetMerchantId}/transactions/${targetTx.transactionId}`), targetTx).catch(() => {});
-      }
+      syncToFirebase(targetTx);
       return newTransactions;
     });
   };
@@ -881,10 +1090,14 @@ export default function App() {
       localStorage.setItem('chaopaopay_is_logged_in', 'false');
       localStorage.removeItem('chaopaopay_merchant');
       localStorage.removeItem('chaopaopay_active_tab');
+      localStorage.removeItem('chaopaopay_transactions');
+      localStorage.removeItem('chaopaopay_current_checkout');
     } catch (e) {}
     setIsSidebarOpen(false);
     setActiveTab('dashboard');
     setIsLoggedIn(false);
+    setTransactions([]);
+    setApiKey(initialApiKey);
     setMerchant(initialMerchant);
   };
 
@@ -1173,7 +1386,7 @@ export default function App() {
           merchant={merchant}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          onUpdateMerchant={setMerchant}
+          onUpdateMerchant={handleUpdateMerchant}
           onSwitchMerchant={handleSwitchMerchant}
           isAccountActive={isAccountActive}
           isCommissionActive={merchant.isCommissionActive !== false && merchant.commissionStatus !== 'Inactive' && merchant.commissionStatus !== 'Deactive'}
@@ -1184,7 +1397,7 @@ export default function App() {
           {activeTab === 'dashboard' && (
             <DashboardHome 
               merchant={merchant}
-              transactions={transactions.filter(t => t.merchantId === merchant.merchantId)}
+              transactions={transactions.filter(t => (t.merchantId || '').trim().toLowerCase() === merchant.merchantId.trim().toLowerCase())}
               setActiveTab={setActiveTab}
               onSelectTransaction={(tx) => setSelectedTx(tx)}
             />
@@ -1192,7 +1405,7 @@ export default function App() {
 
           {activeTab === 'transactions' && (
             <TransactionsTab 
-              transactions={transactions.filter(t => t.merchantId === merchant.merchantId)}
+              transactions={transactions.filter(t => (t.merchantId || '').trim().toLowerCase() === merchant.merchantId.trim().toLowerCase())}
               onSelectTransaction={(tx) => setSelectedTx(tx)}
               onNewTransaction={handleAddTransaction}
               initialTypeFilter={transactionTypeFilter}
@@ -1210,7 +1423,7 @@ export default function App() {
               onApprovePayout={handleAdminApprovePayout}
               onRejectPayout={handleAdminRejectPayout}
               onUpdateSiteSettings={handleUpdateSiteSettings}
-              onUpdateMerchant={setMerchant}
+              onUpdateMerchant={handleUpdateMerchant}
               onSwitchMerchant={handleSwitchMerchant}
             />
           )}
@@ -1220,7 +1433,7 @@ export default function App() {
               merchantId={merchant.merchantId}
               currentBalance={merchant.balance}
               commissionPayin={(merchant.isCommissionActive !== false && merchant.commissionStatus !== 'Inactive' && merchant.commissionStatus !== 'Deactive') ? Number(merchant.commissionPayin ?? 0) : 0}
-              transactions={transactions.filter(t => t.merchantId === merchant.merchantId)}
+              transactions={transactions.filter(t => (t.merchantId || '').trim().toLowerCase() === merchant.merchantId.trim().toLowerCase())}
               onAddTransaction={handleAddTransaction}
               onSuccessReturn={() => setActiveTab('dashboard')}
               onSelectTransaction={(tx) => setSelectedTx(tx)}
@@ -1234,7 +1447,7 @@ export default function App() {
               merchantId={merchant.merchantId}
               currentBalance={merchant.balance}
               commissionPayout={(merchant.isCommissionActive !== false && merchant.commissionStatus !== 'Inactive' && merchant.commissionStatus !== 'Deactive') ? Number(merchant.commissionPayout ?? 0) : 0}
-              transactions={transactions.filter(t => t.merchantId === merchant.merchantId)}
+              transactions={transactions.filter(t => (t.merchantId || '').trim().toLowerCase() === merchant.merchantId.trim().toLowerCase())}
               onAddTransaction={handleAddTransaction}
               onSuccessReturn={() => setActiveTab('dashboard')}
               onSelectTransaction={(tx) => setSelectedTx(tx)}
@@ -1244,7 +1457,7 @@ export default function App() {
           {activeTab === 'apikeys' && (
             <ApiKeysTab 
               apiKey={apiKey}
-              onUpdateApiKey={setApiKey}
+              onUpdateApiKey={handleUpdateApiKey}
             />
           )}
 
@@ -1261,14 +1474,14 @@ export default function App() {
               setActiveTab={setActiveTab} 
               merchantId={merchant.merchantId}
               merchant={merchant}
-              onUpdateMerchant={setMerchant}
+              onUpdateMerchant={handleUpdateMerchant}
             />
           )}
 
           {activeTab === 'settings' && (
             <SettingsTab 
               merchant={merchant}
-              onUpdateMerchant={setMerchant}
+              onUpdateMerchant={handleUpdateMerchant}
             />
           )}
         </main>

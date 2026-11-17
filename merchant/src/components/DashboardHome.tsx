@@ -35,7 +35,10 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   const isCommissionActive = (merchant.isCommissionActive === false || merchant.commissionStatus === 'Inactive' || merchant.commissionStatus === 'Deactive') ? false : true;
 
   // Filter transactions to only show those belonging to the current merchant
-  const merchantTransactions = transactions.filter(t => t.merchantId === merchant.merchantId);
+  const currentMerchantLower = (merchant.merchantId || '').trim().toLowerCase();
+  const merchantTransactions = transactions.filter(
+    t => (t.merchantId || '').trim().toLowerCase() === currentMerchantLower
+  );
 
   const payinTransactions = merchantTransactions.filter(t => t.type === 'Payin' && t.status === 'Success');
   const payoutTransactions = merchantTransactions.filter(t => t.type === 'Payout' && t.status === 'Success');

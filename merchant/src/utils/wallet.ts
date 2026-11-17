@@ -200,11 +200,14 @@ export const saveMerchantDepositNumbers = async (merchantId: string, numbers: De
   // 5. Firebase Realtime Database sync
   if (database) {
     try {
+      const upperId = originalId.toUpperCase();
       await Promise.all([
         set(ref(database, `merchants/${cleanId}/deposit_numbers`), taggedNumbers),
         set(ref(database, `merchants/${originalId}/deposit_numbers`), taggedNumbers),
+        set(ref(database, `merchants/${upperId}/deposit_numbers`), taggedNumbers),
         set(ref(database, `merchants_directory/${cleanId}/depositNumbers`), taggedNumbers),
-        set(ref(database, `merchants_directory/${originalId}/depositNumbers`), taggedNumbers)
+        set(ref(database, `merchants_directory/${originalId}/depositNumbers`), taggedNumbers),
+        set(ref(database, `merchants_directory/${upperId}/depositNumbers`), taggedNumbers)
       ]);
     } catch (e) {
       console.warn('Firebase error saving merchant numbers:', e);
@@ -241,29 +244,104 @@ export const deleteMerchantDepositNumber = async (merchantId: string, numberVal:
   window.dispatchEvent(new Event('storage'));
 };
 
+const cacheSyncedNumbersLocally = (merchantId: string, list: DepositWalletNumber[]) => {
+  const cleanId = merchantId.trim().toLowerCase();
+  const originalId = merchantId.trim();
+  const tagged = list.map(item => ({ ...item, merchantId: originalId }));
+  try {
+    localStorage.setItem(`chaopaopay_merchant_numbers_${cleanId}`, JSON.stringify(tagged));
+
+    const curMerchantRaw = localStorage.getItem('chaopaopay_merchant');
+    if (curMerchantRaw) {
+      const cur = JSON.parse(curMerchantRaw);
+      if (cur && cur.merchantId && cur.merchantId.trim().toLowerCase() === cleanId) {
+        cur.depositNumbers = tagged;
+        localStorage.setItem('chaopaopay_merchant', JSON.stringify(cur));
+      }
+    }
+
+    const globalRaw = localStorage.getItem('chaopaopay_deposit_numbers_list');
+    let gList: any[] = globalRaw ? JSON.parse(globalRaw) : [];
+    if (!Array.isArray(gList)) gList = [];
+    gList = gList.filter((item: any) => !item.merchantId || item.merchantId.trim().toLowerCase() !== cleanId);
+    gList = [...gList, ...tagged];
+    localStorage.setItem('chaopaopay_deposit_numbers_list', JSON.stringify(gList));
+
+    window.dispatchEvent(new CustomEvent('depositNumbersUpdated', { detail: { merchantId: originalId, numbers: tagged } }));
+  } catch (e) {}
+  return tagged;
+};
+
 /**
- * Fetch numbers from Firebase for a merchant in the background (useful when opening deposit link on another device)
+ * Fetch numbers from Firebase for a merchant in the background (useful when opening deposit link or logging in on another device)
  */
 export const syncMerchantNumbersFromFirebase = async (merchantId: string): Promise<DepositWalletNumber[] | null> => {
   if (!database || !merchantId) return null;
   const cleanId = merchantId.trim().toLowerCase();
   const originalId = merchantId.trim();
+  const upperId = originalId.toUpperCase();
+
+  const paths = [
+    `merchants/${cleanId}/deposit_numbers`,
+    `merchants/${originalId}/deposit_numbers`,
+    `merchants/${upperId}/deposit_numbers`,
+    `merchants_directory/${cleanId}/depositNumbers`,
+    `merchants_directory/${originalId}/depositNumbers`,
+    `merchants_directory/${upperId}/depositNumbers`
+  ];
 
   try {
-    const snap = await get(ref(database, `merchants/${cleanId}/deposit_numbers`));
-    if (snap.exists()) {
-      const data = snap.val();
-      const list = Array.isArray(data) ? data : Object.values(data);
-      if (Array.isArray(list) && list.length > 0) {
-        localStorage.setItem(`chaopaopay_merchant_numbers_${cleanId}`, JSON.stringify(list));
-        window.dispatchEvent(new CustomEvent('depositNumbersUpdated', { detail: { merchantId: originalId, numbers: list } }));
-        return list as DepositWalletNumber[];
+    for (const p of paths) {
+      const snap = await get(ref(database, p));
+      if (snap.exists()) {
+        const data = snap.val();
+        const rawList = Array.isArray(data) ? data : Object.values(data || {});
+        const list = (rawList as DepositWalletNumber[]).filter(item => item && item.number);
+        if (list.length > 0) {
+          return cacheSyncedNumbersLocally(originalId, list);
+        }
       }
     }
   } catch (e) {
     console.warn('Firebase sync error for merchant numbers:', e);
   }
   return null;
+};
+
+/**
+ * Subscribe in real time to deposit numbers in Firebase for a merchant across devices.
+ */
+export const subscribeMerchantNumbersFromFirebase = (
+  merchantId: string,
+  onNumbers?: (numbers: DepositWalletNumber[]) => void
+): (() => void) => {
+  if (!database || !merchantId) return () => {};
+  const cleanId = merchantId.trim().toLowerCase();
+  const originalId = merchantId.trim();
+
+  let unsubClean: (() => void) | undefined;
+  let unsubOrig: (() => void) | undefined;
+
+  import('firebase/database').then(({ onValue }) => {
+    const handleSnap = (snap: any) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const rawList = Array.isArray(data) ? data : Object.values(data || {});
+        const list = (rawList as DepositWalletNumber[]).filter(item => item && item.number);
+        const cached = cacheSyncedNumbersLocally(originalId, list);
+        if (onNumbers) onNumbers(cached);
+      }
+    };
+    unsubClean = onValue(ref(database, `merchants/${cleanId}/deposit_numbers`), handleSnap);
+    if (originalId !== cleanId) {
+      unsubOrig = onValue(ref(database, `merchants/${originalId}/deposit_numbers`), handleSnap);
+    }
+  }).catch(() => {});
+
+  return () => {
+    if (unsubClean) unsubClean();
+    if (unsubOrig) unsubOrig();
+  };
 };
 
 /**
